@@ -1,5 +1,5 @@
 import type { TaxResults } from "./types.js";
-import { formatNumber, formatBTC } from "./utils.js";
+import { formatBTC, formatNumber } from "./utils.js";
 
 // Output tax calculation results
 export function displayResults(results: TaxResults): void {
