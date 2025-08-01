@@ -1,10 +1,10 @@
 import { exit } from "node:process";
-import type { UnifiedTransaction } from "./src/types.js";
+import { displayResults } from "./src/output.js";
 import { parseBitcoinDe } from "./src/parsers/bitcoin-de.js";
 import { parseKraken } from "./src/parsers/kraken.js";
 import { processTransactions } from "./src/tax-calculator.js";
-import { displayResults } from "./src/output.js";
 import { loadTransactions } from "./src/transactions/load-transactions.js";
+import type { UnifiedTransaction } from "./src/types.js";
 
 // Main execution
 function main() {
