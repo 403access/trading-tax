@@ -4,7 +4,8 @@
 	"type": "module",
 	"private": true,
 	"scripts": {
-		"dev": "bun run index.ts"
+		"dev": "bun run index.ts",
+		"format": "npx @biomejs/biome format --write ./"
 	},
 	"devDependencies": {
 		"@types/bun": "latest"
