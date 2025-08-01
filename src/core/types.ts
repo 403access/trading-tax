@@ -1,11 +1,12 @@
 // Unified transaction type
 export interface UnifiedTransaction {
 	date: string;
-	type: "buy" | "sell" | "deposit" | "withdrawal" | "fee";
+	type: "buy" | "sell" | "deposit" | "withdrawal" | "fee" | "transfer";
 	btcAmount: number; // positive for incoming, negative for outgoing
 	eurAmount: number; // positive for incoming, negative for outgoing
 	source: "bitcoin.de" | "kraken";
 	originalData: unknown;
+	transferId?: string; // Links related transfer transactions
 }
 
 // Type definitions for different exchange formats
@@ -61,12 +62,14 @@ export interface TaxResults {
 	totalDepositedBTC: number;
 	totalDepositedEUR: number;
 	totalFeeBTC: number;
+	totalTransferredBTC: number; // New: Amount moved between exchanges
 	stats: {
 		buys: number;
 		sells: number;
 		deposits: number;
 		withdrawals: number;
 		fees: number;
+		transfers: number; // New: Count of transfer transactions
 	};
 	remainingPurchases: PurchaseEntry[];
 }

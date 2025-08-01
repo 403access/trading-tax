@@ -89,8 +89,8 @@ import { processBuyTransaction } from "./src/buy-handler";
 import { displayResults } from "./src/output";
 
 // After: Clear, logical paths
-import { processBuyTransaction } from './handlers/index.js';
-import { displayResults } from './output/index.js';
+import { processBuyTransaction } from './handlers/index';
+import { displayResults } from './output/index';
 ```
 
 ### 3. Logical Data Organization

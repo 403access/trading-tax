@@ -55,9 +55,13 @@ export function displayResults(results: TaxResults): void {
 		"Total Withdrawn (EUR):",
 		formatNumber(results.totalWithdrawnEUR),
 	);
+	console.log("Total Transferred (BTC):", formatBTC(results.totalTransferredBTC));
 	console.log("Total Fees (BTC):", formatBTC(results.totalFeeBTC));
 	console.log(
 		"ℹ️  Note: Only Bitcoin (BTC) and Euro (EUR) movements are tracked. Other cryptocurrencies are ignored.",
+	);
+	console.log(
+		"🔄 Transfers: Movements between exchanges are not taxable events.",
 	);
 	console.log("");
 	console.log("=== TRANSACTION STATISTICS ===");
@@ -65,6 +69,7 @@ export function displayResults(results: TaxResults): void {
 	console.log("Sells:", results.stats.sells);
 	console.log("Deposits:", results.stats.deposits);
 	console.log("Withdrawals:", results.stats.withdrawals);
+	console.log("Transfers:", results.stats.transfers);
 	console.log("Fee transactions:", results.stats.fees);
 	console.log("");
 

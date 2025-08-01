@@ -4,16 +4,24 @@ import { processSellTransaction } from "../handlers/sell";
 import { processWithdrawalTransaction } from "../handlers/withdrawal";
 import { processDepositTransaction } from "../handlers/deposit";
 import { processFeeTransaction } from "../handlers/fee";
+import { processTransferTransaction } from "../handlers/transfer";
+import { detectTransfers, markTransfers } from "../services/transfer-detection";
 
 // Main tax processing function
 export function processTransactions(
 	transactions: UnifiedTransaction[],
 ): TaxResults {
+	// Step 1: Detect transfers between exchanges
+	console.log("🔍 Phase 1: Detecting transfers between exchanges...");
+	const detectedTransfers = detectTransfers(transactions);
+	const processedTransactions = markTransfers(transactions, detectedTransfers);
+	
 	// Sort all transactions by date
-	transactions.sort(
+	processedTransactions.sort(
 		(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
 	);
 
+	console.log("🧮 Phase 2: Processing transactions for tax calculations...");
 	const purchaseQueue: PurchaseEntry[] = [];
 	let totalTaxableGain = 0;
 	let totalExemptGain = 0; // Gains from assets held > 1 year (tax-free)
@@ -24,15 +32,20 @@ export function processTransactions(
 	let totalDepositedBTC = 0;
 	let totalDepositedEUR = 0;
 	let totalFeeBTC = 0;
+	let totalTransferredBTC = 0; // New: Track transfers
 
 	// Stats
 	let buys = 0,
 		sells = 0,
 		deposits = 0,
 		withdrawals = 0,
-		fees = 0;
+		fees = 0,
+		transfers = 0;
+	
+	// Track unique transfer IDs to count transfer pairs, not individual transactions
+	const transferIds = new Set<string>();
 
-	for (const tx of transactions) {
+	for (const tx of processedTransactions) {
 		if (tx.type === "buy") {
 			const eurAmount = processBuyTransaction(tx, purchaseQueue);
 			totalBuyEUR += eurAmount;
@@ -59,6 +72,14 @@ export function processTransactions(
 			const feeBTC = processFeeTransaction(tx);
 			totalFeeBTC += feeBTC;
 			fees++;
+		} else if (tx.type === "transfer") {
+			const result = processTransferTransaction(tx);
+			// Only count the transferred BTC once per transfer pair
+			if (tx.transferId && !transferIds.has(tx.transferId)) {
+				totalTransferredBTC += result.transferredBTC;
+				transferIds.add(tx.transferId);
+				transfers++;
+			}
 		}
 	}
 
@@ -72,12 +93,14 @@ export function processTransactions(
 		totalDepositedBTC,
 		totalDepositedEUR,
 		totalFeeBTC,
+		totalTransferredBTC,
 		stats: {
 			buys,
 			sells,
 			deposits,
 			withdrawals,
 			fees,
+			transfers,
 		},
 		remainingPurchases: purchaseQueue,
 	};

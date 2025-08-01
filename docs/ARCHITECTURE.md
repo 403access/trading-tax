@@ -124,13 +124,13 @@ const results = processTransactions(allTransactions);
 ### Clean Import Structure
 ```typescript
 // Core functionality
-import { processTransactions, type UnifiedTransaction } from './core/index.js';
+import { processTransactions, type UnifiedTransaction } from './core/index';
 // Output formatting
-import { displayResults } from './output/index.js';
+import { displayResults } from './output/index';
 // Transaction handlers
-import { processBuyTransaction } from './handlers/index.js';
+import { processBuyTransaction } from './handlers/index';
 // Services
-import { getBitcoinPrice } from './services/index.js';
+import { getBitcoinPrice } from './services/index';
 ```
 
 Each component is focused on its specific responsibility while maintaining the same German tax compliance and FIFO methodology. The configuration-driven approach makes the system easily adaptable to new exchanges, data sources, and requirements.
