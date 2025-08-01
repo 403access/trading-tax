@@ -1,6 +1,13 @@
 # dependencies (bun install)
 node_modules
 
+# Sensitive personal financial data - exclude all CSV files in transactions
+data/transactions/**/*.csv
+
+# But allow documentation and structure files in transactions
+!data/transactions/README.md
+!data/transactions/*/.gitkeep
+
 # output
 out
 dist

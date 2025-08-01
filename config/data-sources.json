@@ -1,0 +1,17 @@
+{
+    "transactions": {
+        "bitcoin-de": {
+            "current": "data/transactions/bitcoin-de/2016-2017.csv",
+            "2016": "data/transactions/bitcoin-de/2016.csv",
+            "2017": "data/transactions/bitcoin-de/2017.csv"
+        },
+        "kraken": {
+            "ledgers-2017": "data/transactions/kraken/ledgers-2017.csv",
+            "trades-2017": "data/transactions/kraken/trades-2017.csv"
+        }
+    },
+    "historicalPrices": {
+        "btc-eur-2016": "data/historical-prices/btc-eur-2016.csv",
+        "btc-eur-2017": "data/historical-prices/btc-eur-2017.csv"
+    }
+}

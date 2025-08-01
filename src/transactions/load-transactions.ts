@@ -1,4 +1,4 @@
-import type { UnifiedTransaction } from "../types";
+import type { UnifiedTransaction } from "../core/types";
 
 // Helper function to safely load transactions
 export function loadTransactions(

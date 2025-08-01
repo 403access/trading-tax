@@ -1,0 +1,5 @@
+# This file keeps the kraken directory in version control
+# Your actual CSV files are ignored for privacy
+# Place your Kraken transaction exports here:
+# - ledgers-2017.csv
+# - trades-2017.csv (if available)

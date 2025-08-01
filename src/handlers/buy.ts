@@ -1,4 +1,4 @@
-import type { PurchaseEntry, UnifiedTransaction } from "./types.js";
+import type { PurchaseEntry, UnifiedTransaction } from "../core/types";
 
 export function processBuyTransaction(
 	tx: UnifiedTransaction,

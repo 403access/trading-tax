@@ -1,9 +1,9 @@
-import type { PurchaseEntry, TaxResults, UnifiedTransaction } from "./types.js";
-import { processBuyTransaction } from "./buy-handler.js";
-import { processSellTransaction } from "./sell-handler.js";
-import { processWithdrawalTransaction } from "./withdrawal-handler.js";
-import { processDepositTransaction } from "./deposit-handler.js";
-import { processFeeTransaction } from "./fee-handler.js";
+import type { PurchaseEntry, TaxResults, UnifiedTransaction } from "./types";
+import { processBuyTransaction } from "../handlers/buy";
+import { processSellTransaction } from "../handlers/sell";
+import { processWithdrawalTransaction } from "../handlers/withdrawal";
+import { processDepositTransaction } from "../handlers/deposit";
+import { processFeeTransaction } from "../handlers/fee";
 
 // Main tax processing function
 export function processTransactions(

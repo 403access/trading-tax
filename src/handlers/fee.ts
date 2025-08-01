@@ -1,4 +1,4 @@
-import type { UnifiedTransaction } from "./types.js";
+import type { UnifiedTransaction } from "../core/types";
 
 export function processFeeTransaction(tx: UnifiedTransaction): number {
 	if (tx.btcAmount < 0) {

@@ -1,6 +1,6 @@
-import type { PurchaseEntry, UnifiedTransaction } from "./types.js";
-import { formatBTC, formatNumber, isHeldOverOneYear } from "./utils.js";
-import { getBitcoinPrice } from "./price-lookup.js";
+import type { PurchaseEntry, UnifiedTransaction } from "../core/types";
+import { formatBTC, formatNumber, isHeldOverOneYear } from "../core/utils";
+import { getBitcoinPrice } from "../services/price-lookup";
 
 export interface WithdrawalResult {
 	btcAmount: number;

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { parse } from "csv-parse/sync";
-import type { KrakenRow, UnifiedTransaction } from "../types.js";
-import { toNumber } from "../utils.js";
+import type { KrakenRow, UnifiedTransaction } from "../core/types";
+import { toNumber } from "../core/utils";
 
 // Read and parse Kraken CSV file
 export function readKrakenCsv(filePath: string): KrakenRow[] {

@@ -1,2 +1,2 @@
-export * from "./bitcoin-de.js";
-export * from "./kraken.js";
+export * from "./bitcoin-de";
+export * from "./kraken";

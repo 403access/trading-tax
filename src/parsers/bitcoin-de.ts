@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { parse } from "csv-parse/sync";
-import type { BitcoinDeRow, UnifiedTransaction } from "../types.js";
-import { toNumber } from "../utils.js";
+import type { BitcoinDeRow, UnifiedTransaction } from "../core/types";
+import { toNumber } from "../core/utils";
 
 // Read and parse Bitcoin.de CSV file
 export function readBitcoinDeCsv(filePath: string): BitcoinDeRow[] {

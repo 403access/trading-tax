@@ -1,4 +1,8 @@
-import type { BitcoinDeRow, KrakenRow, UnifiedTransaction } from "./types.js";
+import type {
+	BitcoinDeRow,
+	KrakenRow,
+	UnifiedTransaction,
+} from "../core/types";
 
 export interface DepositResult {
 	depositedBTC: number;

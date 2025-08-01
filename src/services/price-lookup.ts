@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import { parse } from "csv-parse/sync";
-import { formatNumber } from "./utils.js";
+import { formatNumber } from "../core/utils";
+import { loadDataSources } from "../config";
 
 // Interface for historical price data
 interface HistoricalPriceRow {
@@ -20,12 +21,16 @@ function loadPriceData(): Map<string, number> {
 
 	priceCache = new Map();
 
+	// Load data sources configuration
+	const dataSources = loadDataSources();
+
 	// Load 2016 data
 	try {
-		const content2016 = fs.readFileSync(
-			"BTC_EUR_Kraken_Historische_Daten_2016.csv",
-			"utf8",
-		);
+		const path2016 = dataSources.historicalPrices["btc-eur-2016"];
+		if (!path2016) {
+			throw new Error("2016 price data path not configured");
+		}
+		const content2016 = fs.readFileSync(path2016, "utf8");
 		// Remove UTF-8 BOM if present
 		const cleanContent2016 = content2016.replace(/^\uFEFF/, "");
 
@@ -50,10 +55,11 @@ function loadPriceData(): Map<string, number> {
 
 	// Load 2017 data
 	try {
-		const content2017 = fs.readFileSync(
-			"BTC_EUR_Kraken_Historische_Daten_2017.csv",
-			"utf8",
-		);
+		const path2017 = dataSources.historicalPrices["btc-eur-2017"];
+		if (!path2017) {
+			throw new Error("2017 price data path not configured");
+		}
+		const content2017 = fs.readFileSync(path2017, "utf8");
 		// Remove UTF-8 BOM if present
 		const cleanContent2017 = content2017.replace(/^\uFEFF/, "");
 

@@ -1,0 +1,6 @@
+# This file keeps the bitcoin-de directory in version control
+# Your actual CSV files are ignored for privacy
+# Place your Bitcoin.de transaction exports here:
+# - 2016-2017.csv
+# - 2016.csv (if available)  
+# - 2017.csv (if available)
