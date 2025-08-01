@@ -1,18 +1,11 @@
 {
-    "germany": {
-        "fifoMethod": true,
-        "exemptionPeriod": {
-            "years": 1,
-            "description": "One-year holding period exemption per § 23 EStG"
-        },
-        "taxableEvents": [
-            "sell",
-            "withdrawal",
-            "trade"
-        ],
-        "exemptEvents": [
-            "buy",
-            "deposit"
-        ]
-    }
+	"germany": {
+		"fifoMethod": true,
+		"exemptionPeriod": {
+			"years": 1,
+			"description": "One-year holding period exemption per § 23 EStG"
+		},
+		"taxableEvents": ["sell", "withdrawal", "trade"],
+		"exemptEvents": ["buy", "deposit"]
+	}
 }

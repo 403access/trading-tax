@@ -1,42 +1,42 @@
 {
-    "bitcoin-de": {
-        "name": "Bitcoin.de",
-        "format": "csv",
-        "delimiter": ";",
-        "columns": {
-            "date": "Datum",
-            "type": "Typ",
-            "amount": "Anzahl",
-            "asset": "Währung",
-            "price": "Kurs",
-            "total": "Gesamtpreis",
-            "fee": "Gebühr"
-        },
-        "typeMapping": {
-            "Kauf": "buy",
-            "Verkauf": "sell"
-        }
-    },
-    "kraken": {
-        "name": "Kraken",
-        "format": "csv",
-        "delimiter": ",",
-        "columns": {
-            "txid": "txid",
-            "refid": "refid",
-            "time": "time",
-            "type": "type",
-            "subtype": "subtype",
-            "aclass": "aclass",
-            "asset": "asset",
-            "amount": "amount",
-            "fee": "fee",
-            "balance": "balance"
-        },
-        "typeMapping": {
-            "trade": "trade",
-            "deposit": "deposit",
-            "withdrawal": "withdrawal"
-        }
-    }
+	"bitcoin-de": {
+		"name": "Bitcoin.de",
+		"format": "csv",
+		"delimiter": ";",
+		"columns": {
+			"date": "Datum",
+			"type": "Typ",
+			"amount": "Anzahl",
+			"asset": "Währung",
+			"price": "Kurs",
+			"total": "Gesamtpreis",
+			"fee": "Gebühr"
+		},
+		"typeMapping": {
+			"Kauf": "buy",
+			"Verkauf": "sell"
+		}
+	},
+	"kraken": {
+		"name": "Kraken",
+		"format": "csv",
+		"delimiter": ",",
+		"columns": {
+			"txid": "txid",
+			"refid": "refid",
+			"time": "time",
+			"type": "type",
+			"subtype": "subtype",
+			"aclass": "aclass",
+			"asset": "asset",
+			"amount": "amount",
+			"fee": "fee",
+			"balance": "balance"
+		},
+		"typeMapping": {
+			"trade": "trade",
+			"deposit": "deposit",
+			"withdrawal": "withdrawal"
+		}
+	}
 }
