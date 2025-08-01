@@ -3,16 +3,19 @@ import { parse } from "csv-parse/sync";
 import type { KrakenRow, UnifiedTransaction } from "../types.js";
 import { toNumber } from "../utils.js";
 
-// Parse Kraken CSV
-export function parseKraken(filePath: string): UnifiedTransaction[] {
+// Read and parse Kraken CSV file
+export function readKrakenCsv(filePath: string): KrakenRow[] {
 	const content = fs.readFileSync(filePath, "utf8");
-	const records = parse(content, {
+	return parse(content, {
 		delimiter: ",",
 		columns: true,
 		skip_empty_lines: true,
 		trim: true,
 	}) as KrakenRow[];
+}
 
+// Parse Kraken CSV records into unified transactions
+export function parseKrakenRecords(records: KrakenRow[]): UnifiedTransaction[] {
 	const transactions: UnifiedTransaction[] = [];
 	const tradeGroups = new Map<string, KrakenRow[]>();
 
@@ -105,4 +108,10 @@ export function parseKraken(filePath: string): UnifiedTransaction[] {
 	}
 
 	return transactions;
+}
+
+// Convenience function that combines file reading and parsing
+export function parseKraken(filePath: string): UnifiedTransaction[] {
+	const records = readKrakenCsv(filePath);
+	return parseKrakenRecords(records);
 }

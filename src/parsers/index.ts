@@ -1,2 +1,2 @@
-export { parseBitcoinDe } from "./bitcoin-de.js";
-export { parseKraken } from "./kraken.js";
+export * from "./bitcoin-de.js";
+export * from "./kraken.js";

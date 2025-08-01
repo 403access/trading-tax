@@ -3,16 +3,21 @@ import { parse } from "csv-parse/sync";
 import type { BitcoinDeRow, UnifiedTransaction } from "../types.js";
 import { toNumber } from "../utils.js";
 
-// Parse Bitcoin.de CSV
-export function parseBitcoinDe(filePath: string): UnifiedTransaction[] {
+// Read and parse Bitcoin.de CSV file
+export function readBitcoinDeCsv(filePath: string): BitcoinDeRow[] {
 	const content = fs.readFileSync(filePath, "utf8");
-	const records = parse(content, {
+	return parse(content, {
 		delimiter: ";",
 		columns: true,
 		skip_empty_lines: true,
 		trim: true,
 	}) as BitcoinDeRow[];
+}
 
+// Parse Bitcoin.de CSV records into unified transactions
+export function parseBitcoinDeRecords(
+	records: BitcoinDeRow[],
+): UnifiedTransaction[] {
 	const transactions: UnifiedTransaction[] = [];
 
 	// Helper function to create transaction object
@@ -58,4 +63,10 @@ export function parseBitcoinDe(filePath: string): UnifiedTransaction[] {
 	}
 
 	return transactions;
+}
+
+// Convenience function that combines file reading and parsing
+export function parseBitcoinDe(filePath: string): UnifiedTransaction[] {
+	const records = readBitcoinDeCsv(filePath);
+	return parseBitcoinDeRecords(records);
 }
