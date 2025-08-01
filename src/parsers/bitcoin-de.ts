@@ -15,6 +15,22 @@ export function parseBitcoinDe(filePath: string): UnifiedTransaction[] {
 
 	const transactions: UnifiedTransaction[] = [];
 
+	// Helper function to create transaction object
+	const createTransaction = (
+		date: string,
+		type: UnifiedTransaction["type"],
+		btcAmount: number,
+		eurAmount: number,
+		row: BitcoinDeRow,
+	): UnifiedTransaction => ({
+		date,
+		type,
+		btcAmount,
+		eurAmount,
+		source: "bitcoin.de",
+		originalData: row,
+	});
+
 	for (const row of records) {
 		const typ = row["Typ"];
 		const mengeNachGebuehr = toNumber(row["Menge nach Bitcoin.de-Gebühr"]);
@@ -23,50 +39,21 @@ export function parseBitcoinDe(filePath: string): UnifiedTransaction[] {
 		const datum = row["Datum"];
 
 		if (typ === "Kauf") {
-			transactions.push({
-				date: datum,
-				type: "buy",
-				btcAmount: btcNachGebuehr,
-				eurAmount: -mengeNachGebuehr, // negative because we spent EUR
-				source: "bitcoin.de",
-				originalData: row,
-			});
+			transactions.push(
+				createTransaction(datum, "buy", btcNachGebuehr, -mengeNachGebuehr, row),
+			);
 		} else if (typ === "Verkauf") {
-			transactions.push({
-				date: datum,
-				type: "sell",
-				btcAmount: btcNachGebuehr, // negative in source data
-				eurAmount: mengeNachGebuehr, // positive because we received EUR
-				source: "bitcoin.de",
-				originalData: row,
-			});
+			transactions.push(
+				createTransaction(datum, "sell", btcNachGebuehr, mengeNachGebuehr, row),
+			);
 		} else if (typ === "Einzahlung") {
-			transactions.push({
-				date: datum,
-				type: "deposit",
-				btcAmount: zuAbgang,
-				eurAmount: 0,
-				source: "bitcoin.de",
-				originalData: row,
-			});
+			transactions.push(createTransaction(datum, "deposit", zuAbgang, 0, row));
 		} else if (typ === "Auszahlung") {
-			transactions.push({
-				date: datum,
-				type: "withdrawal",
-				btcAmount: zuAbgang, // negative in source data
-				eurAmount: 0,
-				source: "bitcoin.de",
-				originalData: row,
-			});
+			transactions.push(
+				createTransaction(datum, "withdrawal", zuAbgang, 0, row),
+			);
 		} else if (typ === "Netzwerk-Gebühr") {
-			transactions.push({
-				date: datum,
-				type: "fee",
-				btcAmount: zuAbgang, // negative in source data
-				eurAmount: 0,
-				source: "bitcoin.de",
-				originalData: row,
-			});
+			transactions.push(createTransaction(datum, "fee", zuAbgang, 0, row));
 		}
 	}
 

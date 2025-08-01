@@ -16,6 +16,22 @@ export function parseKraken(filePath: string): UnifiedTransaction[] {
 	const transactions: UnifiedTransaction[] = [];
 	const tradeGroups = new Map<string, KrakenRow[]>();
 
+	// Helper function to create transaction object
+	const createTransaction = (
+		date: string,
+		type: UnifiedTransaction["type"],
+		btcAmount: number,
+		eurAmount: number,
+		originalData: KrakenRow | { btcRow: KrakenRow; eurRow: KrakenRow },
+	): UnifiedTransaction => ({
+		date,
+		type,
+		btcAmount,
+		eurAmount,
+		source: "kraken",
+		originalData,
+	});
+
 	// Group trades by refid (Kraken splits each trade into separate BTC and EUR entries)
 	for (const row of records) {
 		if (row.type === "trade") {
@@ -30,37 +46,20 @@ export function parseKraken(filePath: string): UnifiedTransaction[] {
 
 			if (row.type === "deposit") {
 				if (row.asset === "BTC") {
-					transactions.push({
-						date: row.time,
-						type: "deposit",
-						btcAmount: amount,
-						eurAmount: 0,
-						source: "kraken",
-						originalData: row,
-					});
+					transactions.push(
+						createTransaction(row.time, "deposit", amount, 0, row),
+					);
 				}
 				// EUR deposits don't affect crypto tax calculation
 			} else if (row.type === "withdrawal") {
 				if (row.asset === "BTC") {
-					transactions.push({
-						date: row.time,
-						type: "withdrawal",
-						btcAmount: amount, // already negative in Kraken data
-						eurAmount: 0,
-						source: "kraken",
-						originalData: row,
-					});
+					transactions.push(
+						createTransaction(row.time, "withdrawal", amount, 0, row),
+					);
 
 					// Also add withdrawal fee as separate transaction
 					if (fee > 0) {
-						transactions.push({
-							date: row.time,
-							type: "fee",
-							btcAmount: -fee,
-							eurAmount: 0,
-							source: "kraken",
-							originalData: row,
-						});
+						transactions.push(createTransaction(row.time, "fee", -fee, 0, row));
 					}
 				}
 			}
@@ -81,35 +80,26 @@ export function parseKraken(filePath: string): UnifiedTransaction[] {
 			// Determine if it's a buy or sell based on BTC amount direction
 			const isBuy = btcAmount > 0;
 
-			transactions.push({
-				date: btcRow.time,
-				type: isBuy ? "buy" : "sell",
-				btcAmount: btcAmount,
-				eurAmount: eurAmount,
-				source: "kraken",
-				originalData: { btcRow, eurRow },
-			});
+			transactions.push(
+				createTransaction(
+					btcRow.time,
+					isBuy ? "buy" : "sell",
+					btcAmount,
+					eurAmount,
+					{ btcRow, eurRow },
+				),
+			);
 
 			// Add fees as separate transactions
 			if (btcFee > 0) {
-				transactions.push({
-					date: btcRow.time,
-					type: "fee",
-					btcAmount: -btcFee,
-					eurAmount: 0,
-					source: "kraken",
-					originalData: btcRow,
-				});
+				transactions.push(
+					createTransaction(btcRow.time, "fee", -btcFee, 0, btcRow),
+				);
 			}
 			if (eurFee > 0) {
-				transactions.push({
-					date: eurRow.time,
-					type: "fee",
-					btcAmount: 0,
-					eurAmount: -eurFee,
-					source: "kraken",
-					originalData: eurRow,
-				});
+				transactions.push(
+					createTransaction(eurRow.time, "fee", 0, -eurFee, eurRow),
+				);
 			}
 		}
 	}
