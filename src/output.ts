@@ -51,6 +51,10 @@ export function displayResults(results: TaxResults): void {
 		formatNumber(results.totalDepositedEUR),
 	);
 	console.log("Total Withdrawn (BTC):", formatBTC(results.totalWithdrawnBTC));
+	console.log(
+		"Total Withdrawn (EUR):",
+		formatNumber(results.totalWithdrawnEUR),
+	);
 	console.log("Total Fees (BTC):", formatBTC(results.totalFeeBTC));
 	console.log(
 		"ℹ️  Note: Only Bitcoin (BTC) and Euro (EUR) movements are tracked. Other cryptocurrencies are ignored.",

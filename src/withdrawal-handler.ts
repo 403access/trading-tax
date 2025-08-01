@@ -4,6 +4,7 @@ import { getBitcoinPrice } from "./price-lookup.js";
 
 export interface WithdrawalResult {
 	btcAmount: number;
+	eurValue: number;
 	taxableGain: number;
 	exemptGain: number;
 }
@@ -83,6 +84,7 @@ export function processWithdrawalTransaction(
 
 	return {
 		btcAmount,
+		eurValue: btcAmount * estimatedMarketRate,
 		taxableGain: withdrawalGain,
 		exemptGain: exemptWithdrawalGain,
 	};

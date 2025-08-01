@@ -20,6 +20,7 @@ export function processTransactions(
 	let totalBuyEUR = 0;
 	let totalSellEUR = 0;
 	let totalWithdrawnBTC = 0;
+	let totalWithdrawnEUR = 0;
 	let totalDepositedBTC = 0;
 	let totalDepositedEUR = 0;
 	let totalFeeBTC = 0;
@@ -45,6 +46,7 @@ export function processTransactions(
 		} else if (tx.type === "withdrawal") {
 			const result = processWithdrawalTransaction(tx, purchaseQueue);
 			totalWithdrawnBTC += result.btcAmount;
+			totalWithdrawnEUR += result.eurValue;
 			totalTaxableGain += result.taxableGain;
 			totalExemptGain += result.exemptGain;
 			withdrawals++;
@@ -66,6 +68,7 @@ export function processTransactions(
 		totalBuyEUR,
 		totalSellEUR,
 		totalWithdrawnBTC,
+		totalWithdrawnEUR,
 		totalDepositedBTC,
 		totalDepositedEUR,
 		totalFeeBTC,

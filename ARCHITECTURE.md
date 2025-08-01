@@ -11,7 +11,7 @@
 ### Transaction Handlers (NEW)
 - `src/buy-handler.ts` - Processes buy transactions and FIFO queue management
 - `src/sell-handler.ts` - Handles sell transactions with FIFO tax calculations
-- `src/withdrawal-handler.ts` - Manages withdrawals as disposals with market pricing
+- `src/withdrawal-handler.ts` - Manages withdrawals as disposals with market pricing and EUR valuation
 - `src/deposit-handler.ts` - Processes BTC/EUR deposits with asset detection
 - `src/fee-handler.ts` - Handles fee transactions
 
@@ -35,11 +35,13 @@ Transaction handlers can be easily tested independently and reused in different 
 ### 4. **Type Safety**
 Each handler has its own return interface:
 - `SellResult` - for sell transaction outcomes
-- `WithdrawalResult` - for withdrawal processing results
+- `WithdrawalResult` - for withdrawal processing results (including EUR valuation)
 - `DepositResult` - for deposit processing results
 
-### 5. **Testing**
-Individual functions can be unit tested in isolation, improving code quality and reliability.
+### 5. **Enhanced Financial Tracking**
+- **Total Withdrawn EUR**: Tracks the EUR value of all withdrawals using historical market prices
+- **Price-based Valuation**: Each withdrawal is valued at the Bitcoin price on the transaction date
+- **Comprehensive Reporting**: Shows both BTC and EUR values for all movements
 
 ## Usage
 

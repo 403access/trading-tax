@@ -57,6 +57,7 @@ export interface TaxResults {
 	totalBuyEUR: number;
 	totalSellEUR: number;
 	totalWithdrawnBTC: number;
+	totalWithdrawnEUR: number;
 	totalDepositedBTC: number;
 	totalDepositedEUR: number;
 	totalFeeBTC: number;
