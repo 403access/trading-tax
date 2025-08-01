@@ -15,12 +15,13 @@ export function processSellTransaction(
 	const btcAmount = Math.abs(tx.btcAmount);
 
 	// Calculate taxable gain using FIFO with one-year exemption
+	// Process oldest purchases first (purchaseQueue[0]) per German tax law requirements
 	let remainingSaleAmount = btcAmount;
 	let saleGain = 0;
 	let exemptGain = 0;
 
 	while (remainingSaleAmount > 0 && purchaseQueue.length > 0) {
-		const oldestPurchase = purchaseQueue[0];
+		const oldestPurchase = purchaseQueue[0]; // FIFO: Always use oldest purchase first
 		if (!oldestPurchase) break;
 
 		const isExempt = isHeldOverOneYear(oldestPurchase.date, tx.date);

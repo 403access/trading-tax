@@ -8,7 +8,8 @@ export function processBuyTransaction(
 	const btcAmount = tx.btcAmount;
 	const pricePerBTC = btcAmount > 0 ? eurAmount / btcAmount : 0;
 
-	// Add to FIFO queue
+	// Add to FIFO queue (purchases are processed in chronological order due to pre-sorting)
+	// This ensures the oldest purchases are used first when calculating disposal gains
 	if (btcAmount > 0) {
 		purchaseQueue.push({
 			amount: btcAmount,

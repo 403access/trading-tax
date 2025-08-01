@@ -16,7 +16,8 @@ export function processTransactions(
 	const detectedTransfers = detectTransfers(transactions);
 	const processedTransactions = markTransfers(transactions, detectedTransfers);
 	
-	// Sort all transactions by date
+	// Sort all transactions by date (ascending) to ensure FIFO tax compliance
+	// This is critical: oldest transactions must be processed first for proper FIFO calculation
 	processedTransactions.sort(
 		(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
 	);
