@@ -132,7 +132,63 @@ for (let i = 0; i < records.length; i++) {
 		einzahlenBTC += zuAbgang;
 		anzahlEinzahlungen++;
 	} else if (typ === "Auszahlung") {
-		auszahlenBTC += zuAbgang;
+		const btcAmount = Math.abs(zuAbgang); // Make positive for easier calculation
+		auszahlenBTC += zuAbgang; // Keep original negative value for tracking
+
+		// For tax purposes, withdrawals are treated as disposals
+		// We need to estimate the market value at withdrawal time
+		// Since we don't have the market rate, we'll use the closest purchase price as approximation
+		// This is a simplification - in reality, you'd need the market rate at withdrawal time
+
+		if (btcAmount > 0) {
+			// Calculate taxable gain using FIFO (same as sales)
+			let remainingWithdrawalAmount = btcAmount;
+			let withdrawalGain = 0;
+
+			// Find the most recent purchase price as approximation for market value
+			let estimatedMarketRate = 0;
+			if (purchaseQueue.length > 0) {
+				// Use the most recent purchase price as approximation
+				estimatedMarketRate =
+					purchaseQueue[purchaseQueue.length - 1]?.pricePerBTC || 0;
+			}
+
+			while (remainingWithdrawalAmount > 0 && purchaseQueue.length > 0) {
+				const oldestPurchase = purchaseQueue[0];
+
+				if (!oldestPurchase) break;
+
+				if (oldestPurchase.remaining <= remainingWithdrawalAmount) {
+					// Use entire remaining amount from this purchase
+					const costBasis =
+						oldestPurchase.remaining * oldestPurchase.pricePerBTC;
+					const estimatedValue = oldestPurchase.remaining * estimatedMarketRate;
+					withdrawalGain += estimatedValue - costBasis;
+
+					remainingWithdrawalAmount -= oldestPurchase.remaining;
+					purchaseQueue.shift(); // Remove fully used purchase
+				} else {
+					// Partially use this purchase
+					const costBasis =
+						remainingWithdrawalAmount * oldestPurchase.pricePerBTC;
+					const estimatedValue =
+						remainingWithdrawalAmount * estimatedMarketRate;
+					withdrawalGain += estimatedValue - costBasis;
+
+					oldestPurchase.remaining -= remainingWithdrawalAmount;
+					remainingWithdrawalAmount = 0;
+				}
+			}
+
+			// Add withdrawal gain to total taxable gain
+			// Note: This is an approximation since we don't have the exact market rate at withdrawal
+			totalTaxableGain += withdrawalGain;
+
+			console.log(
+				`⚠️  Withdrawal on ${datum}: ${formatBTC(btcAmount)} BTC (est. gain: ${formatNumber(withdrawalGain)} EUR)`,
+			);
+		}
+
 		anzahlAuszahlungen++;
 	} else if (typ === "Netzwerk-Gebühr") {
 		netzwerkGebuehrBTC += zuAbgang;
@@ -172,6 +228,11 @@ console.log("Einfacher Gewinn (EUR):", formatNumber(gewinn));
 console.log("");
 console.log("=== STEUERRELEVANT (FIFO-Methode) ===");
 console.log("Steuerpflichtiger Gewinn (EUR):", formatNumber(totalTaxableGain));
+console.log("⚠️  WICHTIG: Auszahlungen werden als Veräußerungen behandelt!");
+console.log(
+	"⚠️  Marktpreise bei Auszahlungen sind geschätzt (letzter Kaufpreis)!",
+);
+console.log("⚠️  Für genaue Steuerberechnung echte Marktpreise verwenden!");
 console.log("");
 console.log("=== BITCOIN BEWEGUNGEN ===");
 console.log("Ausgezahlt (BTC):", formatBTC(auszahlenBTC));
