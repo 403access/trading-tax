@@ -6,6 +6,7 @@ import type {
 	UnifiedTransaction,
 } from "./types.js";
 import { formatBTC, formatNumber, isHeldOverOneYear } from "./utils.js";
+import { getBitcoinPrice } from "./price-lookup.js";
 
 // Main tax processing function
 export function processTransactions(
@@ -115,13 +116,22 @@ export function processTransactions(
 			const btcAmount = Math.abs(tx.btcAmount);
 			totalWithdrawnBTC += btcAmount;
 
+			// Get historical Bitcoin price for this withdrawal date
+			const historicalPrice = getBitcoinPrice(tx.date);
+
 			// For tax purposes, withdrawals are treated as disposals
-			// We need to estimate market value at withdrawal time
 			let estimatedMarketRate = 0;
-			if (purchaseQueue.length > 0) {
-				// Use the most recent purchase price as approximation
+			if (historicalPrice !== null) {
+				estimatedMarketRate = historicalPrice;
+			} else if (purchaseQueue.length > 0) {
+				// Fallback to most recent purchase price
 				estimatedMarketRate =
 					purchaseQueue[purchaseQueue.length - 1]?.pricePerBTC || 0;
+				console.log(
+					`⚠️  No historical price found for ${tx.date}, using last purchase price: €${formatNumber(estimatedMarketRate)}/BTC`,
+				);
+			} else {
+				console.log(`❌ No price data available for withdrawal on ${tx.date}`);
 			}
 
 			if (btcAmount > 0) {
@@ -171,10 +181,10 @@ export function processTransactions(
 				totalTaxableGain += withdrawalGain;
 				totalExemptGain += exemptWithdrawalGain;
 
-				if (exemptWithdrawalGain > 0) {
-					console.log(
-						`🏦 Withdrawal (${tx.source}) on ${tx.date}: ${formatBTC(btcAmount)} BTC - Taxable: ${formatNumber(withdrawalGain)} EUR, Tax-free (>1yr): ${formatNumber(exemptWithdrawalGain)} EUR`,
-					);
+				if (exemptWithdrawalGain > 0 || withdrawalGain > 0) {
+					// console.log(
+					// 	`🏦 Withdrawal (${tx.source}) on ${tx.date}: ${formatBTC(btcAmount)} BTC @ €${formatNumber(estimatedMarketRate)}/BTC - Taxable: ${formatNumber(withdrawalGain)} EUR, Tax-free (>1yr): ${formatNumber(exemptWithdrawalGain)} EUR`,
+					// );
 				}
 			}
 			withdrawals++;

@@ -9,25 +9,37 @@ export function displayResults(results: TaxResults): void {
 	console.log("Total Bought (EUR):", formatNumber(results.totalBuyEUR));
 	console.log("Total Sold (EUR):", formatNumber(results.totalSellEUR));
 	console.log(
-		"Simple Profit (EUR):",
+		"Simple EUR-only Profit:",
 		formatNumber(results.totalSellEUR - results.totalBuyEUR),
 	);
 	console.log("");
-	console.log("=== TAX RELEVANT (FIFO Method) ===");
+	console.log(
+		"💡 NOTE: Simple profit is negative because withdrawals (",
+		formatBTC(results.totalWithdrawnBTC),
+		"BTC) are not valued in EUR.",
+	);
+	console.log(
+		"💡 Actual profit calculation below includes market-priced withdrawals!",
+	);
+	console.log("");
+	console.log(
+		"=== TAX RELEVANT (FIFO Method with Market-Priced Withdrawals) ===",
+	);
 	console.log("Taxable Gain (EUR):", formatNumber(results.totalTaxableGain));
 	console.log(
 		"Tax-free Gain >1yr (EUR):",
 		formatNumber(results.totalExemptGain),
 	);
 	console.log(
-		"Total Gain (EUR):",
+		"Total Realized Gain (EUR):",
 		formatNumber(results.totalTaxableGain + results.totalExemptGain),
 	);
-	console.log("⚠️  IMPORTANT: Withdrawals are treated as disposals!");
 	console.log(
-		"⚠️  Market prices at withdrawals are estimated (last purchase price)!",
+		"⚠️  IMPORTANT: Withdrawals are treated as disposals at market price!",
 	);
-	console.log("⚠️  Use actual market prices for accurate tax calculation!");
+	console.log(
+		"📊 Using historical Bitcoin prices from Kraken data (2016-2017)",
+	);
 	console.log(
 		"✅ German tax law: Gains from crypto held >1 year are tax-exempt!",
 	);
