@@ -52,8 +52,15 @@ export function parseKrakenRecords(records: KrakenRow[]): UnifiedTransaction[] {
 					transactions.push(
 						createTransaction(row.time, "deposit", amount, 0, row),
 					);
+				} else if (row.asset === "EUR") {
+					transactions.push(
+						createTransaction(row.time, "deposit", 0, amount, row),
+					);
+				} else {
+					console.warn(
+						`Ignoring deposit of unsupported asset: ${row.asset} at ${row.time}`,
+					);
 				}
-				// EUR deposits don't affect crypto tax calculation
 			} else if (row.type === "withdrawal") {
 				if (row.asset === "BTC") {
 					transactions.push(

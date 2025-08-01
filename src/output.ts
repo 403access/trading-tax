@@ -32,9 +32,17 @@ export function displayResults(results: TaxResults): void {
 		"✅ German tax law: Gains from crypto held >1 year are tax-exempt!",
 	);
 	console.log("");
-	console.log("=== BITCOIN MOVEMENTS ===");
+	console.log("=== DEPOSIT & MOVEMENT SUMMARY ===");
+	console.log("Total Deposited (BTC):", formatBTC(results.totalDepositedBTC));
+	console.log(
+		"Total Deposited (EUR):",
+		formatNumber(results.totalDepositedEUR),
+	);
 	console.log("Total Withdrawn (BTC):", formatBTC(results.totalWithdrawnBTC));
 	console.log("Total Fees (BTC):", formatBTC(results.totalFeeBTC));
+	console.log(
+		"ℹ️  Note: Only Bitcoin (BTC) and Euro (EUR) movements are tracked. Other cryptocurrencies are ignored.",
+	);
 	console.log("");
 	console.log("=== TRANSACTION STATISTICS ===");
 	console.log("Buys:", results.stats.buys);

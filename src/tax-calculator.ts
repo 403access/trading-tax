@@ -1,4 +1,10 @@
-import type { PurchaseEntry, TaxResults, UnifiedTransaction } from "./types.js";
+import type {
+	BitcoinDeRow,
+	KrakenRow,
+	PurchaseEntry,
+	TaxResults,
+	UnifiedTransaction,
+} from "./types.js";
 import { formatBTC, formatNumber, isHeldOverOneYear } from "./utils.js";
 
 // Main tax processing function
@@ -16,6 +22,8 @@ export function processTransactions(
 	let totalBuyEUR = 0;
 	let totalSellEUR = 0;
 	let totalWithdrawnBTC = 0;
+	let totalDepositedBTC = 0;
+	let totalDepositedEUR = 0;
 	let totalFeeBTC = 0;
 
 	// Stats
@@ -171,6 +179,24 @@ export function processTransactions(
 			}
 			withdrawals++;
 		} else if (tx.type === "deposit") {
+			// Check the asset type from original data
+			if (tx.source === "kraken") {
+				const krakenData = tx.originalData as KrakenRow;
+				if (krakenData.asset === "BTC") {
+					totalDepositedBTC += Math.abs(tx.btcAmount);
+				} else if (krakenData.asset === "EUR") {
+					totalDepositedEUR += Math.abs(tx.eurAmount);
+				}
+			} else if (tx.source === "bitcoin.de") {
+				const bitcoinDeData = tx.originalData as BitcoinDeRow;
+				if (bitcoinDeData.Währung === "BTC") {
+					totalDepositedBTC += Math.abs(tx.btcAmount);
+				} else if (bitcoinDeData.Währung === "EUR") {
+					totalDepositedEUR += Math.abs(tx.eurAmount);
+				}
+			} else {
+				console.warn(`Unknown deposit source: ${tx.source} on ${tx.date}`);
+			}
 			deposits++;
 		} else if (tx.type === "fee") {
 			if (tx.btcAmount < 0) {
@@ -186,6 +212,8 @@ export function processTransactions(
 		totalBuyEUR,
 		totalSellEUR,
 		totalWithdrawnBTC,
+		totalDepositedBTC,
+		totalDepositedEUR,
 		totalFeeBTC,
 		stats: {
 			buys,
