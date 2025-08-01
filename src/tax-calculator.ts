@@ -1,12 +1,9 @@
-import type {
-	BitcoinDeRow,
-	KrakenRow,
-	PurchaseEntry,
-	TaxResults,
-	UnifiedTransaction,
-} from "./types.js";
-import { formatBTC, formatNumber, isHeldOverOneYear } from "./utils.js";
-import { getBitcoinPrice } from "./price-lookup.js";
+import type { PurchaseEntry, TaxResults, UnifiedTransaction } from "./types.js";
+import { processBuyTransaction } from "./buy-handler.js";
+import { processSellTransaction } from "./sell-handler.js";
+import { processWithdrawalTransaction } from "./withdrawal-handler.js";
+import { processDepositTransaction } from "./deposit-handler.js";
+import { processFeeTransaction } from "./fee-handler.js";
 
 // Main tax processing function
 export function processTransactions(
@@ -36,182 +33,29 @@ export function processTransactions(
 
 	for (const tx of transactions) {
 		if (tx.type === "buy") {
-			const eurAmount = Math.abs(tx.eurAmount);
-			const btcAmount = tx.btcAmount;
-			const pricePerBTC = btcAmount > 0 ? eurAmount / btcAmount : 0;
-
+			const eurAmount = processBuyTransaction(tx, purchaseQueue);
 			totalBuyEUR += eurAmount;
-
-			// Add to FIFO queue
-			if (btcAmount > 0) {
-				purchaseQueue.push({
-					amount: btcAmount,
-					pricePerBTC: pricePerBTC,
-					date: tx.date,
-					remaining: btcAmount,
-					source: tx.source,
-				});
-			}
 			buys++;
 		} else if (tx.type === "sell") {
-			const eurAmount = tx.eurAmount;
-			const btcAmount = Math.abs(tx.btcAmount);
-
-			totalSellEUR += eurAmount;
-
-			// Calculate taxable gain using FIFO with one-year exemption
-			let remainingSaleAmount = btcAmount;
-			let saleGain = 0;
-			let exemptGain = 0;
-
-			while (remainingSaleAmount > 0 && purchaseQueue.length > 0) {
-				const oldestPurchase = purchaseQueue[0];
-				if (!oldestPurchase) break;
-
-				const isExempt = isHeldOverOneYear(oldestPurchase.date, tx.date);
-
-				if (oldestPurchase.remaining <= remainingSaleAmount) {
-					// Use entire remaining amount from this purchase
-					const costBasis =
-						oldestPurchase.remaining * oldestPurchase.pricePerBTC;
-					const saleValue = (oldestPurchase.remaining / btcAmount) * eurAmount;
-					const gain = saleValue - costBasis;
-
-					if (isExempt) {
-						exemptGain += gain;
-					} else {
-						saleGain += gain;
-					}
-
-					remainingSaleAmount -= oldestPurchase.remaining;
-					purchaseQueue.shift();
-				} else {
-					// Partially use this purchase
-					const costBasis = remainingSaleAmount * oldestPurchase.pricePerBTC;
-					const saleValue = (remainingSaleAmount / btcAmount) * eurAmount;
-					const gain = saleValue - costBasis;
-
-					if (isExempt) {
-						exemptGain += gain;
-					} else {
-						saleGain += gain;
-					}
-
-					oldestPurchase.remaining -= remainingSaleAmount;
-					remainingSaleAmount = 0;
-				}
-			}
-
-			totalTaxableGain += saleGain;
-			totalExemptGain += exemptGain;
-
-			if (exemptGain > 0) {
-				console.log(
-					`💰 Sale on ${tx.date}: ${formatBTC(btcAmount)} BTC - Taxable: ${formatNumber(saleGain)} EUR, Tax-free (>1yr): ${formatNumber(exemptGain)} EUR`,
-				);
-			}
-
+			const result = processSellTransaction(tx, purchaseQueue);
+			totalSellEUR += result.eurAmount;
+			totalTaxableGain += result.taxableGain;
+			totalExemptGain += result.exemptGain;
 			sells++;
 		} else if (tx.type === "withdrawal") {
-			const btcAmount = Math.abs(tx.btcAmount);
-			totalWithdrawnBTC += btcAmount;
-
-			// Get historical Bitcoin price for this withdrawal date
-			const historicalPrice = getBitcoinPrice(tx.date);
-
-			// For tax purposes, withdrawals are treated as disposals
-			let estimatedMarketRate = 0;
-			if (historicalPrice !== null) {
-				estimatedMarketRate = historicalPrice;
-			} else if (purchaseQueue.length > 0) {
-				// Fallback to most recent purchase price
-				estimatedMarketRate =
-					purchaseQueue[purchaseQueue.length - 1]?.pricePerBTC || 0;
-				console.log(
-					`⚠️  No historical price found for ${tx.date}, using last purchase price: €${formatNumber(estimatedMarketRate)}/BTC`,
-				);
-			} else {
-				console.log(`❌ No price data available for withdrawal on ${tx.date}`);
-			}
-
-			if (btcAmount > 0) {
-				let remainingWithdrawalAmount = btcAmount;
-				let withdrawalGain = 0;
-				let exemptWithdrawalGain = 0;
-
-				while (remainingWithdrawalAmount > 0 && purchaseQueue.length > 0) {
-					const oldestPurchase = purchaseQueue[0];
-					if (!oldestPurchase) break;
-
-					const isExempt = isHeldOverOneYear(oldestPurchase.date, tx.date);
-
-					if (oldestPurchase.remaining <= remainingWithdrawalAmount) {
-						const costBasis =
-							oldestPurchase.remaining * oldestPurchase.pricePerBTC;
-						const estimatedValue =
-							oldestPurchase.remaining * estimatedMarketRate;
-						const gain = estimatedValue - costBasis;
-
-						if (isExempt) {
-							exemptWithdrawalGain += gain;
-						} else {
-							withdrawalGain += gain;
-						}
-
-						remainingWithdrawalAmount -= oldestPurchase.remaining;
-						purchaseQueue.shift();
-					} else {
-						const costBasis =
-							remainingWithdrawalAmount * oldestPurchase.pricePerBTC;
-						const estimatedValue =
-							remainingWithdrawalAmount * estimatedMarketRate;
-						const gain = estimatedValue - costBasis;
-
-						if (isExempt) {
-							exemptWithdrawalGain += gain;
-						} else {
-							withdrawalGain += gain;
-						}
-
-						oldestPurchase.remaining -= remainingWithdrawalAmount;
-						remainingWithdrawalAmount = 0;
-					}
-				}
-
-				totalTaxableGain += withdrawalGain;
-				totalExemptGain += exemptWithdrawalGain;
-
-				if (exemptWithdrawalGain > 0 || withdrawalGain > 0) {
-					// console.log(
-					// 	`🏦 Withdrawal (${tx.source}) on ${tx.date}: ${formatBTC(btcAmount)} BTC @ €${formatNumber(estimatedMarketRate)}/BTC - Taxable: ${formatNumber(withdrawalGain)} EUR, Tax-free (>1yr): ${formatNumber(exemptWithdrawalGain)} EUR`,
-					// );
-				}
-			}
+			const result = processWithdrawalTransaction(tx, purchaseQueue);
+			totalWithdrawnBTC += result.btcAmount;
+			totalTaxableGain += result.taxableGain;
+			totalExemptGain += result.exemptGain;
 			withdrawals++;
 		} else if (tx.type === "deposit") {
-			// Check the asset type from original data
-			if (tx.source === "kraken") {
-				const krakenData = tx.originalData as KrakenRow;
-				if (krakenData.asset === "BTC") {
-					totalDepositedBTC += Math.abs(tx.btcAmount);
-				} else if (krakenData.asset === "EUR") {
-					totalDepositedEUR += Math.abs(tx.eurAmount);
-				}
-			} else if (tx.source === "bitcoin.de") {
-				const bitcoinDeData = tx.originalData as BitcoinDeRow;
-				if (bitcoinDeData.Währung === "BTC") {
-					totalDepositedBTC += Math.abs(tx.btcAmount);
-				} else if (bitcoinDeData.Währung === "EUR") {
-					totalDepositedEUR += Math.abs(tx.eurAmount);
-				}
-			} else {
-				console.warn(`Unknown deposit source: ${tx.source} on ${tx.date}`);
-			}
+			const result = processDepositTransaction(tx);
+			totalDepositedBTC += result.depositedBTC;
+			totalDepositedEUR += result.depositedEUR;
 			deposits++;
 		} else if (tx.type === "fee") {
-			if (tx.btcAmount < 0) {
-				totalFeeBTC += Math.abs(tx.btcAmount);
-			}
+			const feeBTC = processFeeTransaction(tx);
+			totalFeeBTC += feeBTC;
 			fees++;
 		}
 	}
