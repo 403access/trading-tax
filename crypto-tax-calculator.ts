@@ -274,10 +274,23 @@ function processTransactions(transactions: UnifiedTransaction[]) {
 
 	const purchaseQueue: PurchaseEntry[] = [];
 	let totalTaxableGain = 0;
+	let totalExemptGain = 0; // Gains from assets held > 1 year (tax-free)
 	let totalBuyEUR = 0;
 	let totalSellEUR = 0;
 	let totalWithdrawnBTC = 0;
 	let totalFeeBTC = 0;
+
+	// German tax law: One-year holding period for crypto exemption
+	function isHeldOverOneYear(
+		purchaseDate: string,
+		disposalDate: string,
+	): boolean {
+		const purchase = new Date(purchaseDate);
+		const disposal = new Date(disposalDate);
+		const oneYearLater = new Date(purchase);
+		oneYearLater.setFullYear(purchase.getFullYear() + 1);
+		return disposal >= oneYearLater;
+	}
 
 	// Stats
 	let buys = 0,
@@ -311,20 +324,29 @@ function processTransactions(transactions: UnifiedTransaction[]) {
 
 			totalSellEUR += eurAmount;
 
-			// Calculate taxable gain using FIFO
+			// Calculate taxable gain using FIFO with one-year exemption
 			let remainingSaleAmount = btcAmount;
 			let saleGain = 0;
+			let exemptGain = 0;
 
 			while (remainingSaleAmount > 0 && purchaseQueue.length > 0) {
 				const oldestPurchase = purchaseQueue[0];
 				if (!oldestPurchase) break;
+
+				const isExempt = isHeldOverOneYear(oldestPurchase.date, tx.date);
 
 				if (oldestPurchase.remaining <= remainingSaleAmount) {
 					// Use entire remaining amount from this purchase
 					const costBasis =
 						oldestPurchase.remaining * oldestPurchase.pricePerBTC;
 					const saleValue = (oldestPurchase.remaining / btcAmount) * eurAmount;
-					saleGain += saleValue - costBasis;
+					const gain = saleValue - costBasis;
+
+					if (isExempt) {
+						exemptGain += gain;
+					} else {
+						saleGain += gain;
+					}
 
 					remainingSaleAmount -= oldestPurchase.remaining;
 					purchaseQueue.shift();
@@ -332,7 +354,13 @@ function processTransactions(transactions: UnifiedTransaction[]) {
 					// Partially use this purchase
 					const costBasis = remainingSaleAmount * oldestPurchase.pricePerBTC;
 					const saleValue = (remainingSaleAmount / btcAmount) * eurAmount;
-					saleGain += saleValue - costBasis;
+					const gain = saleValue - costBasis;
+
+					if (isExempt) {
+						exemptGain += gain;
+					} else {
+						saleGain += gain;
+					}
 
 					oldestPurchase.remaining -= remainingSaleAmount;
 					remainingSaleAmount = 0;
@@ -340,6 +368,14 @@ function processTransactions(transactions: UnifiedTransaction[]) {
 			}
 
 			totalTaxableGain += saleGain;
+			totalExemptGain += exemptGain;
+
+			if (exemptGain > 0) {
+				console.log(
+					`💰 Sale on ${tx.date}: ${formatBTC(btcAmount)} BTC - Taxable: ${formatNumber(saleGain)} EUR, Tax-free (>1yr): ${formatNumber(exemptGain)} EUR`,
+				);
+			}
+
 			sells++;
 		} else if (tx.type === "withdrawal") {
 			const btcAmount = Math.abs(tx.btcAmount);
@@ -357,17 +393,26 @@ function processTransactions(transactions: UnifiedTransaction[]) {
 			if (btcAmount > 0) {
 				let remainingWithdrawalAmount = btcAmount;
 				let withdrawalGain = 0;
+				let exemptWithdrawalGain = 0;
 
 				while (remainingWithdrawalAmount > 0 && purchaseQueue.length > 0) {
 					const oldestPurchase = purchaseQueue[0];
 					if (!oldestPurchase) break;
+
+					const isExempt = isHeldOverOneYear(oldestPurchase.date, tx.date);
 
 					if (oldestPurchase.remaining <= remainingWithdrawalAmount) {
 						const costBasis =
 							oldestPurchase.remaining * oldestPurchase.pricePerBTC;
 						const estimatedValue =
 							oldestPurchase.remaining * estimatedMarketRate;
-						withdrawalGain += estimatedValue - costBasis;
+						const gain = estimatedValue - costBasis;
+
+						if (isExempt) {
+							exemptWithdrawalGain += gain;
+						} else {
+							withdrawalGain += gain;
+						}
 
 						remainingWithdrawalAmount -= oldestPurchase.remaining;
 						purchaseQueue.shift();
@@ -376,7 +421,13 @@ function processTransactions(transactions: UnifiedTransaction[]) {
 							remainingWithdrawalAmount * oldestPurchase.pricePerBTC;
 						const estimatedValue =
 							remainingWithdrawalAmount * estimatedMarketRate;
-						withdrawalGain += estimatedValue - costBasis;
+						const gain = estimatedValue - costBasis;
+
+						if (isExempt) {
+							exemptWithdrawalGain += gain;
+						} else {
+							withdrawalGain += gain;
+						}
 
 						oldestPurchase.remaining -= remainingWithdrawalAmount;
 						remainingWithdrawalAmount = 0;
@@ -384,9 +435,13 @@ function processTransactions(transactions: UnifiedTransaction[]) {
 				}
 
 				totalTaxableGain += withdrawalGain;
-				// console.log(
-				// 	`⚠️  Withdrawal (${tx.source}) on ${tx.date}: ${formatBTC(btcAmount)} BTC (est. gain: ${formatNumber(withdrawalGain)} EUR)`,
-				// );
+				totalExemptGain += exemptWithdrawalGain;
+
+				if (exemptWithdrawalGain > 0) {
+					console.log(
+						`🏦 Withdrawal (${tx.source}) on ${tx.date}: ${formatBTC(btcAmount)} BTC - Taxable: ${formatNumber(withdrawalGain)} EUR, Tax-free (>1yr): ${formatNumber(exemptWithdrawalGain)} EUR`,
+					);
+				}
 			}
 			withdrawals++;
 		} else if (tx.type === "deposit") {
@@ -409,11 +464,19 @@ function processTransactions(transactions: UnifiedTransaction[]) {
 	console.log("");
 	console.log("=== TAX RELEVANT (FIFO Method) ===");
 	console.log("Taxable Gain (EUR):", formatNumber(totalTaxableGain));
+	console.log("Tax-free Gain >1yr (EUR):", formatNumber(totalExemptGain));
+	console.log(
+		"Total Gain (EUR):",
+		formatNumber(totalTaxableGain + totalExemptGain),
+	);
 	console.log("⚠️  IMPORTANT: Withdrawals are treated as disposals!");
 	console.log(
 		"⚠️  Market prices at withdrawals are estimated (last purchase price)!",
 	);
 	console.log("⚠️  Use actual market prices for accurate tax calculation!");
+	console.log(
+		"✅ German tax law: Gains from crypto held >1 year are tax-exempt!",
+	);
 	console.log("");
 	console.log("=== BITCOIN MOVEMENTS ===");
 	console.log("Total Withdrawn (BTC):", formatBTC(totalWithdrawnBTC));
