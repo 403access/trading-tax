@@ -1,7 +1,7 @@
 {
     "transactions": {
         "bitcoin-de": {
-            "current": "data/transactions/bitcoin-de/2016-2017.csv",
+            "full": "data/transactions/bitcoin-de/2016-2017.csv",
             "2016": "data/transactions/bitcoin-de/2016.csv",
             "2017": "data/transactions/bitcoin-de/2017.csv"
         },

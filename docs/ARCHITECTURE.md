@@ -103,7 +103,7 @@ const krakenConfig = dataSources.transactions.kraken;
 
 // Load transactions using configured paths
 const allTransactions: UnifiedTransaction[] = [
-  ...loadTransactions(parseBitcoinDe, bitcoinDeConfig.current, "Bitcoin.de"),
+  ...loadTransactions(parseBitcoinDe, bitcoinDeConfig.full, "Bitcoin.de"),
   ...loadTransactions(parseKraken, krakenConfig["ledgers-2017"], "Kraken"),
 ];
 ```

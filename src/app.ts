@@ -13,13 +13,13 @@ export function runApplication(): void {
 	const bitcoinDeConfig = dataSources.transactions["bitcoin-de"];
 	const krakenConfig = dataSources.transactions.kraken;
 
-	if (!bitcoinDeConfig?.current || !krakenConfig?.["ledgers-2017"]) {
+	if (!bitcoinDeConfig?.full || !krakenConfig?.["ledgers-2017"]) {
 		console.error("❌ Required transaction files not configured");
 		return;
 	}
 
 	const allTransactions: UnifiedTransaction[] = [
-		...loadTransactions(parseBitcoinDe, bitcoinDeConfig.current, "Bitcoin.de"),
+		...loadTransactions(parseBitcoinDe, bitcoinDeConfig.full, "Bitcoin.de"),
 		...loadTransactions(parseKraken, krakenConfig["ledgers-2017"], "Kraken"),
 	];
 
