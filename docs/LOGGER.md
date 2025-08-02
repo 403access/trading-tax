@@ -1,130 +1,155 @@
-# Enhanced Configurable Logger System
+# Type-Safe Logging System
 
 ## Overview
 
-The logger system now uses an enum-based approach with configurable log levels for each feature, providing much more granular control than the previous boolean-based system.
+The logger uses a **TypeScript-first configuration** approach where the JSON file is **optional** and only used for runtime overrides. This eliminates duplication and provides compile-time type safety.
 
-## Configuration
+## ✨ Key Features
 
-### Log Levels (Global and Per-Feature)
-- `ERROR` (0): Only critical errors
-- `WARN` (1): Warnings and errors
-- `INFO` (2): General information, warnings, and errors
-- `DEBUG` (3): Detailed debugging information plus all above
-- `off`: Disable logging for that feature entirely
+- 🔒 **Type-Safe Feature Keys**: Compile-time validation of feature names
+- 🎯 **Clean API**: `logger.log("feature", "message")` - no manual log levels needed
+- ⚡ **Zero Config**: Works out of the box with TypeScript defaults
+- 📝 **Optional JSON**: Only needed for runtime overrides
+- 🏗️ **Config-Driven Levels**: Log levels come from configuration, not code
 
-### Features Available
-- `dataLoading`: Transaction file loading and parsing
-- `transferDetection`: Transfer analysis between exchanges
-- `taxCalculations`: Individual transaction tax calculations
-- `transactionProcessing`: Detailed transaction processing steps
-- `priceData`: Historical price data loading and operations
-- `statistics`: Summary statistics and counts
-- `fifoQueue`: FIFO queue operations (very verbose)
-- `results`: Final calculation results
+## 🔧 Configuration
 
-## Usage Examples
+### TypeScript Configuration (Primary)
 
-### Basic Usage
 ```typescript
-import { logger, LogLevel, LogFeature } from '../core/logger';
+// src/core/logger.ts - Single source of truth
+const DEFAULT_CONFIG = {
+  level: LogLevel.INFO,
+  enableTimestamps: false,
+  enableColors: true,
+  features: {
+    dataLoading: LogLevel.INFO,
+    transferDetection: LogLevel.INFO,
+    taxCalculations: LogLevel.INFO,
+    transactionProcessing: 'off' as const,
+    priceData: LogLevel.INFO,
+    statistics: LogLevel.INFO,
+    fifoQueue: 'off' as const,
+    results: LogLevel.INFO,
+  },
+} as const;
 
-// Use convenience methods (with default levels)
-logger.dataLoading("Loading transactions...");
-logger.transferDetection("Found potential transfer");
-logger.taxCalculations("Processing withdrawal");
-
-// Use with specific log levels
-logger.priceData("Debug price info", LogLevel.DEBUG);
-logger.taxCalculations("Tax warning", LogLevel.WARN);
+// Type-safe feature keys derived from config
+type FeatureKey = keyof typeof DEFAULT_CONFIG.features;
 ```
 
-### Direct Feature Logging
+### Optional JSON Override
+
+Create `config/logger.json` **only if you need runtime overrides**:
+
+```json
+{
+  "level": "DEBUG",
+  "enableTimestamps": true,
+  "features": {
+    "transferDetection": "off",
+    "priceData": "DEBUG",
+    "fifoQueue": "DEBUG"
+  }
+}
+```
+
+## 🚀 Usage
+
+### Primary API (Config-Driven Levels)
 ```typescript
-// Use the generic log method for full control
-logger.log(LogFeature.TRANSFER_DETECTION, LogLevel.ERROR, "Transfer detection failed");
-logger.log(LogFeature.PRICE_DATA, LogLevel.DEBUG, "Price lookup details");
+// Uses the feature's configured log level automatically
+logger.log("dataLoading", "Loading transactions...");
+logger.log("transferDetection", "Found transfer match");
+logger.log("taxCalculations", "Processing withdrawal");
+
+// Type-safe: These would cause compile errors
+// logger.log("invalidFeature", "Won't compile!");  ❌
+// logger.log("unknownKey", "Type error!");         ❌
 ```
 
-## Configuration Examples
+### Override API (Custom Levels)
+```typescript
+// For cases where you need a specific log level
+logger.logWithLevel("priceData", LogLevel.DEBUG, "Debug price info");
+logger.logWithLevel("transferDetection", LogLevel.ERROR, "Transfer failed");
+```
 
-### Production (Minimal Output)
-```json
-{
-    "level": "WARN",
-    "enableTimestamps": true,
-    "enableColors": false,
-    "features": {
-        "dataLoading": "WARN",
-        "transferDetection": "off",
-        "taxCalculations": "WARN",
-        "transactionProcessing": "off",
-        "priceData": "WARN",
-        "statistics": "INFO",
-        "fifoQueue": "off",
-        "results": "INFO"
-    }
+### Standard Logging
+```typescript
+// Traditional log levels still available
+logger.info("General information");
+logger.warn("Warning message");
+logger.error("Error occurred");
+logger.debug("Debug details");
+```
+
+## 🎯 Feature Configuration Examples
+
+### Development Setup
+```typescript
+// Just edit TypeScript defaults - no JSON needed!
+const DEFAULT_CONFIG = {
+  features: {
+    dataLoading: LogLevel.DEBUG,      // Verbose data loading
+    transferDetection: LogLevel.INFO, // Show transfer detection
+    taxCalculations: LogLevel.WARN,   // Only important tax messages
+    transactionProcessing: 'off',     // Disable verbose processing
+  }
 }
 ```
 
-### Development (Verbose Debugging)
+### Production Override
 ```json
 {
-    "level": "DEBUG",
-    "enableTimestamps": true,
-    "enableColors": true,
-    "features": {
-        "dataLoading": "INFO",
-        "transferDetection": "DEBUG",
-        "taxCalculations": "DEBUG",
-        "transactionProcessing": "DEBUG",
-        "priceData": "DEBUG",
-        "statistics": "INFO",
-        "fifoQueue": "DEBUG",
-        "results": "INFO"
-    }
+  "level": "WARN",
+  "features": {
+    "transferDetection": "off",
+    "transactionProcessing": "off",
+    "fifoQueue": "off"
+  }
 }
 ```
 
-### Transfer Detection Focus
+### Debugging Specific Issues
 ```json
 {
-    "level": "INFO",
-    "enableTimestamps": false,
-    "enableColors": true,
-    "features": {
-        "dataLoading": "WARN",
-        "transferDetection": "DEBUG",
-        "taxCalculations": "off",
-        "transactionProcessing": "off",
-        "priceData": "off",
-        "statistics": "INFO",
-        "fifoQueue": "off",
-        "results": "INFO"
-    }
+  "level": "DEBUG",
+  "features": {
+    "transferDetection": "DEBUG",
+    "priceData": "DEBUG"
+  }
 }
 ```
 
-## How It Works
+## 🏗️ Architecture Benefits
 
-1. **Global Level**: Acts as a minimum threshold - no message below this level will show
-2. **Feature Level**: Each feature can have its own level or be disabled entirely
-3. **Message Level**: Each log call specifies what level the message is
-4. **Resolution**: A message shows only if:
-   - Feature is not "off"
-   - Message level ≤ Feature level 
-   - Message level ≤ Global level
+### 1. **No Duplication**
+- Single source of truth in TypeScript
+- JSON only for overrides, not complete configuration
+- Eliminates sync issues between TypeScript and JSON
 
-## Migration from Previous System
+### 2. **Type Safety**
+- Feature names validated at compile time
+- Invalid features caught before runtime
+- Auto-completion in IDEs
 
-The system maintains backward compatibility with the old boolean-based configuration:
-- `true` → `"INFO"`
-- `false` → `"off"`
+### 3. **Zero Configuration**
+- Works immediately without any setup
+- Sensible defaults built into code
+- No required configuration files
 
-## Benefits
+### 4. **Runtime Flexibility**
+- JSON overrides for production environments
+- Easy to disable verbose features in production
+- Environment-specific configuration possible
 
-1. **Granular Control**: Set different verbosity for different system components
-2. **Production Ready**: Easy to create clean, minimal output for production
-3. **Debugging Support**: Enable detailed logging only for components you're investigating
-4. **Maintainable**: Clear separation of concerns with enum-based features
-5. **Flexible**: Mix and match log levels to create perfect output for your use case
+## 📝 Log Levels
+
+| Level | Numeric Value | Use Case                       |
+| ----- | ------------- | ------------------------------ |
+| ERROR | 0             | Critical errors, failures      |
+| WARN  | 1             | Warnings, potential issues     |
+| INFO  | 2             | General information, progress  |
+| DEBUG | 3             | Detailed debugging information |
+| off   | N/A           | Disable feature completely     |

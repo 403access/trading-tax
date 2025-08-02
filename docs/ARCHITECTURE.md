@@ -1,136 +1,146 @@
-# Crypto Tax Calculator - Enhanced Architecture
+# Architecture Overview
 
-## Reorganized File Structure
+This document describes the modular architecture of the crypto tax calculator, designed for maintainability, type safety, and German tax law compliance.
 
-### Configuration
-- `config/data-sources.json` - File paths and data source configuration
-- `config/tax-rules.json` - German tax law configuration (FIFO, exemption periods)
-- `config/exchanges.json` - Exchange-specific parsing configuration
+## 📂 Directory Structure
 
-### Data Organization
-- `data/transactions/` - All transaction CSV files organized by exchange
-  - `bitcoin-de/` - Bitcoin.de transaction files (2016-2017.csv, 2016.csv, 2017.csv)
-  - `kraken/` - Kraken transaction files (ledgers-2017.csv, trades-2017.csv)
-- `data/historical-prices/` - Historical price data files
-  - `btc-eur-2016.csv` - 2016 Bitcoin price data
-  - `btc-eur-2017.csv` - 2017 Bitcoin price data
+### `/src/core/` - Core Business Logic
+- **`types.ts`**: Central type definitions and interfaces
+- **`tax-calculator.ts`**: Main FIFO processing engine with German tax law compliance
+- **`utils.ts`**: Shared utility functions (number parsing, date calculations)
+- **`logger.ts`**: Type-safe logging system with feature-specific controls
 
-### Source Code Structure
-- `src/core/` - Core business logic
-  - `tax-calculator.ts` - Main orchestrator coordinating all transaction processing
-  - `types.ts` - TypeScript interfaces and type definitions
-  - `utils.ts` - Utility functions (formatting, date calculations)
-  - `index.ts` - Core exports
+### `/src/handlers/` - Transaction Processing
+Modular handlers for each transaction type:
+- **`buy.ts`**: Purchase transactions (adds to FIFO queue)
+- **`sell.ts`**: Sale transactions (removes from FIFO queue, calculates gains)
+- **`withdrawal.ts`**: Withdrawal processing (taxable disposal at market price)
+- **`deposit.ts`**: Deposit tracking (non-taxable)
+- **`fee.ts`**: Fee accounting
+- **`transfer.ts`**: Inter-exchange transfers (non-taxable)
 
-- `src/handlers/` - Transaction type handlers
-  - `buy.ts` - Processes buy transactions and FIFO queue management
-  - `sell.ts` - Handles sell transactions with FIFO tax calculations
-  - `withdrawal.ts` - Manages withdrawals as disposals with market pricing and EUR valuation
-  - `deposit.ts` - Processes BTC/EUR deposits with asset detection
-  - `fee.ts` - Handles fee transactions
-  - `index.ts` - Handler exports
+### `/src/services/` - Business Services
+- **`transfer-detection.ts`**: Identifies transfers between exchanges using exact amount matching
+- **`price-lookup.ts`**: Historical price data loading and lookup
 
-- `src/services/` - External services
-  - `price-lookup.ts` - Historical Bitcoin price data with interpolation
-  - `index.ts` - Service exports
+### `/src/parsers/` - Data Import
+Exchange-specific CSV parsers that convert to unified format:
+- **`bitcoin-de.ts`**: Bitcoin.de transaction parser
+- **`kraken.ts`**: Kraken ledger parser
 
-- `src/parsers/` - CSV parsers for different exchanges
-  - `bitcoin-de.ts` - Bitcoin.de CSV parser
-  - `kraken.ts` - Kraken CSV parser
-  - `index.ts` - Parser exports
+### `/src/output/` - Report Generation
+- **`display.ts`**: Formats and displays tax calculation results
 
-- `src/output/` - Results display and reporting
-  - `formatter.ts` - Results display and reporting
-  - `index.ts` - Output exports
+### `/src/transactions/` - Data Loading
+- **`load-transactions.ts`**: Orchestrates loading from multiple sources
 
-- `src/transactions/` - Transaction management
-  - `load-transactions.ts` - Transaction loading utilities
+### `/config/` - Configuration
+- **`data-sources.json`**: Maps transaction files and data sources
+- **`logger.json`**: Optional logging configuration (overrides TypeScript defaults)
 
-- `src/config.ts` - Configuration loading utilities
-- `src/app.ts` - Main application orchestrator
+## 🔄 Data Flow
 
-### Application Entry Points
-- `index.ts` - Simple entry point
-- `src/app.ts` - Main application logic
+```
+1. Configuration Loading
+   ├── data-sources.json → File paths
+   └── logger.json → Logging overrides (optional)
 
-### Documentation
-- `docs/ARCHITECTURE.md` - This architecture documentation
-- `README.md` - Project overview and usage instructions
+2. Data Import
+   ├── CSV Files → Parsers → UnifiedTransaction[]
+   └── Price Data → Historical prices
 
-## Benefits of Enhanced Organization
+3. Processing Pipeline
+   ├── Transfer Detection → Mark inter-exchange movements
+   ├── FIFO Sorting → Chronological order
+   └── Tax Calculation → Process each transaction type
 
-### 1. **Clear Separation of Concerns**
-- **Business Logic** (`src/core/`) - Tax calculations, types, utilities
-- **Data Processing** (`src/handlers/`) - Transaction-specific processing
-- **External Services** (`src/services/`) - Price lookup, file operations
-- **Data Organization** (`data/`) - All CSV files organized by exchange and type
-- **Configuration** (`config/`) - Centralized configuration management
-
-### 2. **Improved Maintainability**
-- Related files are grouped together logically
-- Configuration is externalized and easily modifiable
-- Data files are organized and clearly labeled
-- Import paths are shorter and more intuitive
-
-### 3. **Enhanced Scalability**
-- Easy to add new exchanges by adding configuration
-- New transaction types can be added with dedicated handlers
-- Historical price data can be extended by adding new CSV files
-- Configuration-driven approach allows for easy customization
-
-### 4. **Better Development Experience**
-- Clean, shorter import paths
-- Logical file organization
-- Centralized configuration reduces hardcoded values
-- Clear separation makes testing easier
-
-### 5. **Production Ready**
-- Configuration files allow for environment-specific settings
-- Data organization supports multiple data sources
-- Error handling and validation throughout
-- Clear entry points for different use cases
-
-## Usage
-
-The enhanced architecture provides a clean, configuration-driven approach:
-
-### Configuration-Driven Data Loading
-```typescript
-// Load configuration
-const dataSources = loadDataSources();
-const bitcoinDeConfig = dataSources.transactions["bitcoin-de"];
-const krakenConfig = dataSources.transactions.kraken;
-
-// Load transactions using configured paths
-const allTransactions: UnifiedTransaction[] = [
-  ...loadTransactions(parseBitcoinDe, bitcoinDeConfig.full, "Bitcoin.de"),
-  ...loadTransactions(parseKraken, krakenConfig["ledgers-2017"], "Kraken"),
-];
+4. Output Generation
+   └── Format Results → Display tax report
 ```
 
-### Modular Transaction Processing
-```typescript
-// Main tax calculator coordinates all handlers
-const results = processTransactions(allTransactions);
+## 🔧 Key Design Patterns
 
-// Each handler processes specific transaction types:
-// - buy.ts: Purchase processing and FIFO queue management
-// - sell.ts: Sale processing with tax calculations
-// - withdrawal.ts: Market-priced disposal calculations
-// - deposit.ts: Asset-based deposit detection
-// - fee.ts: Fee transaction handling
+### 1. **Unified Transaction Format**
+All exchanges convert to a common `UnifiedTransaction` interface:
+```typescript
+interface UnifiedTransaction {
+  type: "buy" | "sell" | "deposit" | "withdrawal" | "fee" | "transfer";
+  date: string;
+  btcAmount: number;
+  eurAmount: number;
+  source: string;
+  transferId?: string;
+}
 ```
 
-### Clean Import Structure
+### 2. **Modular Handler Pattern**
+Each transaction type has its own handler with consistent interface:
 ```typescript
-// Core functionality
-import { processTransactions, type UnifiedTransaction } from './core/index';
-// Output formatting
-import { displayResults } from './output/index';
-// Transaction handlers
-import { processBuyTransaction } from './handlers/index';
-// Services
-import { getBitcoinPrice } from './services/index';
+export function processBuyTransaction(
+  tx: UnifiedTransaction, 
+  queue: PurchaseEntry[]
+): number
 ```
 
-Each component is focused on its specific responsibility while maintaining the same German tax compliance and FIFO methodology. The configuration-driven approach makes the system easily adaptable to new exchanges, data sources, and requirements.
+### 3. **Type-Safe Configuration**
+- TypeScript-first configuration with compile-time type safety
+- Optional JSON overrides for runtime configuration
+- Feature keys derived from TypeScript definitions
+
+### 4. **Separation of Concerns**
+- **Parsers**: Only handle CSV → UnifiedTransaction conversion
+- **Handlers**: Only handle specific transaction type logic
+- **Services**: Handle cross-cutting concerns (transfers, prices)
+- **Core**: Orchestrate the overall process
+
+## 🇩🇪 German Tax Law Implementation
+
+### FIFO Compliance
+1. **Chronological Sorting**: All transactions sorted by date before processing
+2. **Queue Management**: Purchases added to FIFO queue, disposals remove oldest first
+3. **One-Year Exemption**: Automatic calculation of holding periods
+
+### Transfer Detection
+1. **Exact Matching**: Withdrawal amount = Deposit amount (within tolerance)
+2. **Time Window**: Configurable tolerance (default: 30 days)
+3. **Cross-Exchange**: Different source exchanges only
+4. **Non-Taxable**: Transfers marked and excluded from tax calculations
+
+### Market Pricing
+1. **Historical Data**: Uses actual historical price data
+2. **Withdrawal Valuation**: Market price at time of withdrawal
+3. **Accurate Reporting**: Proper cost basis and gain calculations
+
+## 🔍 Type Safety Features
+
+### Compile-Time Guarantees
+- **Transaction Types**: Exhaustive pattern matching prevents missing cases
+- **Logger Features**: Feature keys validated at compile time
+- **Configuration**: Strong typing prevents configuration errors
+
+### Runtime Safety
+- **Input Validation**: CSV parsing with error handling
+- **Amount Matching**: Precise decimal comparison for transfers
+- **Date Parsing**: Robust date handling across different formats
+
+## 🚀 Extensibility
+
+### Adding New Exchanges
+1. Create parser in `/src/parsers/new-exchange.ts`
+2. Implement `UnifiedTransaction` conversion
+3. Add to data sources configuration
+4. No changes needed to core logic
+
+### Adding New Transaction Types
+1. Extend `UnifiedTransaction` type union
+2. Create handler in `/src/handlers/new-type.ts`
+3. Add case to main processing loop
+4. Type system ensures exhaustive handling
+
+### Adding New Features
+1. Add feature to logger configuration
+2. Use `logger.log("newFeature", "message")`
+3. Type safety ensures valid feature names
+4. Runtime configuration available via JSON
+
+This architecture provides a solid foundation for accurate German tax compliance while remaining maintainable and extensible.
