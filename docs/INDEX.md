@@ -12,10 +12,11 @@ Welcome to the **German Crypto Tax Calculator** documentation hub! Here's your g
 
 ## 🏗️ Technical Documentation
 
-| Document                           | Purpose                               | Audience                    |
-| ---------------------------------- | ------------------------------------- | --------------------------- |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | **System Design & Technical Details** | Developers, Contributors    |
-| [LOGGER.md](LOGGER.md)             | **Type-Safe Logging System**          | Developers using the logger |
+| Document                                   | Purpose                               | Audience                        |
+| ------------------------------------------ | ------------------------------------- | ------------------------------- |
+| [ARCHITECTURE.md](ARCHITECTURE.md)         | **System Design & Technical Details** | Developers, Contributors        |
+| [LOGGER.md](LOGGER.md)                     | **Type-Safe Logging System**          | Developers using the logger     |
+| [CONFIGURABLE_TAX.md](CONFIGURABLE_TAX.md) | **Configurable Tax System**           | Developers, International Users |
 
 ## 📁 Directory Structure Overview
 
@@ -24,7 +25,10 @@ docs/
 ├── INDEX.md                    # This file - documentation navigation
 ├── ARCHITECTURE.md             # Technical architecture guide
 ├── LOGGER.md                   # Type-safe logging documentation  
+├── CONFIGURABLE_TAX.md         # Configurable tax system guide
 ├── SECURITY.md                 # Privacy and data protection
+├── LOGGER_OLD.md               # Legacy logger docs (historical)
+└── REORGANIZATION_HISTORY.md   # Project evolution (historical)
 
 data/transactions/README.md     # Transaction data setup guide
 README.md                       # Main project documentation

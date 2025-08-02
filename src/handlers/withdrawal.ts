@@ -1,5 +1,5 @@
 import type { PurchaseEntry, UnifiedTransaction } from "../core/types";
-import { formatBTC, formatNumber, isHeldOverOneYear } from "../core/utils";
+import { formatBTC, formatNumber, isHeldOverOneYear, getHoldingPeriodDetails } from "../core/utils";
 import { getBitcoinPrice } from "../services/price-lookup";
 
 export interface WithdrawalResult {
@@ -76,8 +76,17 @@ export function processWithdrawalTransaction(
 		}
 
 		if (exemptWithdrawalGain > 0 || withdrawalGain > 0) {
+			// Enhanced logging with holding period details
+			const oldestUsedPurchase = purchaseQueue.length > 0 ? purchaseQueue[0] : null;
+			let holdingInfo = "";
+			
+			if (oldestUsedPurchase) {
+				const holdingDetails = getHoldingPeriodDetails(oldestUsedPurchase.date, tx.date);
+				holdingInfo = ` (${holdingDetails.status})`;
+			}
+			
 			console.log(
-				`🏦 Withdrawal (${tx.source}) on ${tx.date}: ${formatBTC(btcAmount)} BTC @ €${formatNumber(estimatedMarketRate)}/BTC - Taxable: ${formatNumber(withdrawalGain)} EUR, Tax-free (>1yr): ${formatNumber(exemptWithdrawalGain)} EUR`,
+				`🏦 Withdrawal (${tx.source}) on ${tx.date}: ${formatBTC(btcAmount)} BTC @ €${formatNumber(estimatedMarketRate)}/BTC${holdingInfo} - Taxable: ${formatNumber(withdrawalGain)} EUR, Tax-free (>1yr): ${formatNumber(exemptWithdrawalGain)} EUR`,
 			);
 		}
 	}

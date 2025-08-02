@@ -1,11 +1,13 @@
 {
-	"germany": {
-		"fifoMethod": true,
-		"exemptionPeriod": {
-			"years": 1,
-			"description": "One-year holding period exemption per § 23 EStG"
-		},
-		"taxableEvents": ["sell", "withdrawal", "trade"],
-		"exemptEvents": ["buy", "deposit"]
+	"exemptions": {
+		"annualPrivateSalesExemption": 600,
+		"holdingPeriodExemption": {
+			"months": 12,
+			"description": "§23 EStG - Private sales gains exempt after 1 year"
+		}
+	},
+	"displayOptions": {
+		"showDetailedTaxAnalysis": true,
+		"showOptimizationTips": true
 	}
 }

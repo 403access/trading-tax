@@ -1,5 +1,5 @@
 import type { PurchaseEntry, UnifiedTransaction } from "../core/types";
-import { formatBTC, formatNumber, isHeldOverOneYear } from "../core/utils";
+import { formatBTC, formatNumber, isHeldOverOneYear, getHoldingPeriodDetails } from "../core/utils";
 
 export interface SellResult {
 	eurAmount: number;
@@ -57,9 +57,18 @@ export function processSellTransaction(
 		}
 	}
 
-	if (exemptGain > 0) {
+	if (exemptGain > 0 || saleGain > 0) {
+		// Enhanced logging with holding period details
+		const oldestUsedPurchase = purchaseQueue.length > 0 ? purchaseQueue[0] : null;
+		let holdingInfo = "";
+		
+		if (oldestUsedPurchase) {
+			const holdingDetails = getHoldingPeriodDetails(oldestUsedPurchase.date, tx.date);
+			holdingInfo = ` (${holdingDetails.status})`;
+		}
+		
 		console.log(
-			`💰 Sale on ${tx.date}: ${formatBTC(btcAmount)} BTC - Taxable: ${formatNumber(saleGain)} EUR, Tax-free (>1yr): ${formatNumber(exemptGain)} EUR`,
+			`💰 Sale on ${tx.date}: ${formatBTC(btcAmount)} BTC${holdingInfo} - Taxable: ${formatNumber(saleGain)} EUR, Tax-free (>1yr): ${formatNumber(exemptGain)} EUR`,
 		);
 	}
 
