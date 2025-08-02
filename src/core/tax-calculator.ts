@@ -6,13 +6,14 @@ import { processDepositTransaction } from "../handlers/deposit";
 import { processFeeTransaction } from "../handlers/fee";
 import { processTransferTransaction } from "../handlers/transfer";
 import { detectTransfers, markTransfers } from "../services/transfer-detection";
+import { logger, LogLevel } from "./logger";
 
 // Main tax processing function
 export function processTransactions(
 	transactions: UnifiedTransaction[],
 ): TaxResults {
 	// Step 1: Detect transfers between exchanges
-	console.log("🔍 Phase 1: Detecting transfers between exchanges...");
+	logger.log("transferDetection", "🔍 Phase 1: Detecting transfers between exchanges...");
 	const detectedTransfers = detectTransfers(transactions);
 	const processedTransactions = markTransfers(transactions, detectedTransfers);
 	
@@ -22,7 +23,7 @@ export function processTransactions(
 		(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
 	);
 
-	console.log("🧮 Phase 2: Processing transactions for tax calculations...");
+	logger.log("taxCalculations", "🧮 Phase 2: Processing transactions for tax calculations...");
 	const purchaseQueue: PurchaseEntry[] = [];
 	let totalTaxableGain = 0;
 	let totalExemptGain = 0; // Gains from assets held > 1 year (tax-free)

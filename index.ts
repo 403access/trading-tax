@@ -1,13 +1,12 @@
-import { exit } from "node:process";
 import { runApplication } from "./src/app";
+import { logger } from "./src/core/logger";
 
-// Main execution
-function main() {
+async function main() {
 	try {
 		runApplication();
 	} catch (error) {
-		console.error("❌ Application error:", error);
-		exit(1);
+		logger.error("❌ Application error:", error);
+		process.exit(1);
 	}
 }
 

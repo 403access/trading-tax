@@ -1,4 +1,5 @@
 import type { UnifiedTransaction } from "../core/types";
+import { logger, LogLevel } from "../core/logger";
 
 // Configuration for transfer detection
 interface TransferDetectionConfig {
@@ -25,19 +26,19 @@ export function detectTransfers(
   const withdrawals = transactions.filter(tx => tx.type === "withdrawal");
   const deposits = transactions.filter(tx => tx.type === "deposit");
   
-  console.log(`🔍 Analyzing ${withdrawals.length} withdrawals and ${deposits.length} deposits for transfer patterns...`);
+  logger.log("transferDetection", `🔍 Analyzing ${withdrawals.length} withdrawals and ${deposits.length} deposits for transfer patterns...`);
   
   // Debug: Show BTC deposits (non-zero amounts) and recent withdrawals
   const btcDeposits = deposits.filter(d => Math.abs(d.btcAmount) > 0.00001);
   const bitcoinDeWithdrawals = withdrawals.filter(w => w.source === "bitcoin.de");
   
-  console.log(`📥 BTC deposits (${btcDeposits.length} found):`);
+  logger.log("transferDetection", `📥 BTC deposits (${btcDeposits.length} found):`);
   btcDeposits.forEach(d => 
-    console.log(`  ${d.source}: ${Math.abs(d.btcAmount).toFixed(8)} BTC on ${d.date}`)
+    logger.log("transferDetection", `  ${d.source}: ${Math.abs(d.btcAmount).toFixed(8)} BTC on ${d.date}`)
   );
-  console.log(`� Bitcoin.de withdrawals (${bitcoinDeWithdrawals.length} found):`);
+  logger.log("transferDetection", `📤 Bitcoin.de withdrawals (${bitcoinDeWithdrawals.length} found):`);
   bitcoinDeWithdrawals.slice(-5).forEach(w => 
-    console.log(`  ${w.source}: ${Math.abs(w.btcAmount).toFixed(8)} BTC on ${w.date}`)
+    logger.log("transferDetection", `  ${w.source}: ${Math.abs(w.btcAmount).toFixed(8)} BTC on ${w.date}`)
   );
   
   // Track which transactions we've already matched
@@ -84,17 +85,17 @@ export function detectTransfers(
         
         const timeDiff = Math.abs(depositTime - withdrawalTime) / (1000 * 60 * 60);
         
-        console.log(`🔄 Transfer detected:`);
-        console.log(`   📤 Withdrawal: ${withdrawal.source} - ${withdrawalAmount.toFixed(8)} BTC on ${withdrawal.date}`);
-        console.log(`   📥 Deposit: ${deposit.source} - ${depositAmount.toFixed(8)} BTC on ${deposit.date}`);
-        console.log(`   ⏰ Time difference: ${timeDiff.toFixed(1)} hours`);
+        logger.log("transferDetection", `🔄 Transfer detected:`);
+        logger.log("transferDetection", `   📤 Withdrawal: ${withdrawal.source} - ${withdrawalAmount.toFixed(8)} BTC on ${withdrawal.date}`);
+        logger.log("transferDetection", `   📥 Deposit: ${deposit.source} - ${depositAmount.toFixed(8)} BTC on ${deposit.date}`);
+        logger.log("transferDetection", `   ⏰ Time difference: ${timeDiff.toFixed(1)} hours`);
         
         break; // Found a match, move to next withdrawal
       }
     }
   }
   
-  console.log(`✅ Found ${transfers.length} exact amount transfers between exchanges`);
+  logger.log("transferDetection", `✅ Found ${transfers.length} exact amount transfers between exchanges`);
   return transfers;
 }
 

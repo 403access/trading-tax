@@ -2,6 +2,7 @@ import fs from "node:fs";
 import { parse } from "csv-parse/sync";
 import { formatNumber } from "../core/utils";
 import { loadDataSources } from "../config";
+import { logger, LogLevel } from "../core/logger";
 
 // Interface for historical price data
 interface HistoricalPriceRow {
@@ -48,9 +49,9 @@ function loadPriceData(): Map<string, number> {
 				priceCache.set(date, price);
 			}
 		}
-		console.log(`Loaded ${records2016.length} price points from 2016`);
+		logger.logWithLevel("priceData", LogLevel.DEBUG, `Loaded ${records2016.length} price points from 2016`);
 	} catch {
-		console.log("Warning: Could not load 2016 price data");
+		logger.logWithLevel("priceData", LogLevel.WARN, "Warning: Could not load 2016 price data");
 	}
 
 	// Load 2017 data
@@ -77,17 +78,17 @@ function loadPriceData(): Map<string, number> {
 				priceCache.set(date, price);
 			}
 		}
-		console.log(`Loaded ${records2017.length} price points from 2017`);
+		logger.logWithLevel("priceData", LogLevel.DEBUG, `Loaded ${records2017.length} price points from 2017`);
 	} catch {
-		console.log("Warning: Could not load 2017 price data");
+		logger.logWithLevel("priceData", LogLevel.WARN, "Warning: Could not load 2017 price data");
 	}
 
-	console.log(`Loaded ${priceCache.size} historical price points`);
+	logger.log("priceData", `Loaded ${priceCache.size} historical price points`);
 
 	// Debug: Show date range of loaded data
 	if (priceCache.size > 0) {
 		const dates = Array.from(priceCache.keys()).sort();
-		console.log(`Price data range: ${dates[0]} to ${dates[dates.length - 1]}`);
+		logger.logWithLevel("priceData", LogLevel.DEBUG, `Price data range: ${dates[0]} to ${dates[dates.length - 1]}`);
 	}
 
 	return priceCache;

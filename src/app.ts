@@ -4,17 +4,18 @@ import { parseBitcoinDe } from "./parsers/bitcoin-de";
 import { parseKraken } from "./parsers/kraken";
 import { loadTransactions } from "./transactions/load-transactions";
 import { loadDataSources } from "./config";
+import { logger, LogLevel } from "./core/logger";
 
 export function runApplication(): void {
-	console.log("🔄 Loading configuration...");
+	logger.info("🔄 Loading configuration...");
 	const dataSources = loadDataSources();
 
-	console.log("📊 Loading transaction data...");
+	logger.log("dataLoading", "📊 Loading transaction data...");
 	const bitcoinDeConfig = dataSources.transactions["bitcoin-de"];
 	const krakenConfig = dataSources.transactions.kraken;
 
 	if (!bitcoinDeConfig?.full || !krakenConfig?.["ledgers-2017"]) {
-		console.error("❌ Required transaction files not configured");
+		logger.error("❌ Required transaction files not configured");
 		return;
 	}
 
@@ -24,17 +25,17 @@ export function runApplication(): void {
 	];
 
 	if (allTransactions.length === 0) {
-		console.log("❌ No transactions found.");
+		logger.error("❌ No transactions found.");
 		return;
 	}
 
-	console.log(`✅ Loaded ${allTransactions.length} transactions`);
-	console.log("🧮 Calculating tax implications...");
+	logger.log("dataLoading", `✅ Loaded ${allTransactions.length} transactions`);
+	logger.log("taxCalculations", "🧮 Calculating tax implications...");
 
 	const results = processTransactions(allTransactions);
 
-	console.log("📋 Generating report...");
+	logger.log("results", "📋 Generating report...");
 	displayResults(results);
 
-	console.log("✨ Tax calculation complete!");
+	logger.info("✨ Tax calculation complete!");
 }
