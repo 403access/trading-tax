@@ -7,7 +7,8 @@
         },
         "kraken": {
             "ledgers-2017": "data/transactions/kraken/ledgers-2017.csv",
-            "trades-2017": "data/transactions/kraken/trades-2017.csv"
+            "trades-2017": "data/transactions/kraken/trades-2017.csv",
+            "ledgers-full": "data/transactions/kraken/ledgers-full.csv"
         }
     },
     "historicalPrices": {

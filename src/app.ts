@@ -14,14 +14,17 @@ export function runApplication(): void {
 	const bitcoinDeConfig = dataSources.transactions["bitcoin-de"];
 	const krakenConfig = dataSources.transactions.kraken;
 
-	if (!bitcoinDeConfig?.full || !krakenConfig?.["ledgers-2017"]) {
+	const bitcoinLedgers = bitcoinDeConfig?.["full"];
+	const krakenLedgers = krakenConfig?.["ledgers-full"];
+
+	if (!bitcoinLedgers || !krakenLedgers) {
 		logger.error("❌ Required transaction files not configured");
 		return;
 	}
 
 	const allTransactions: UnifiedTransaction[] = [
-		...loadTransactions(parseBitcoinDe, bitcoinDeConfig.full, "Bitcoin.de"),
-		...loadTransactions(parseKraken, krakenConfig["ledgers-2017"], "Kraken"),
+		...loadTransactions(parseBitcoinDe, bitcoinLedgers, "Bitcoin.de"),
+		...loadTransactions(parseKraken, krakenLedgers, "Kraken"),
 	];
 
 	if (allTransactions.length === 0) {
