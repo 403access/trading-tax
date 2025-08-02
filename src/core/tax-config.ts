@@ -8,11 +8,20 @@ interface TaxConfig {
 			months: number;
 			description: string;
 		};
+		stakingHoldingPeriodExemption: {
+			months: number;
+			description: string;
+		};
 	};
 	taxCalculation: {
 		baseAnnualIncome: number;
 		applyIncomeTax: boolean;
 		taxYear: number;
+	};
+	stakingRewards: {
+		trackStakingIncome: boolean;
+		stakingIncomeExemption: number;
+		description: string;
 	};
 	displayOptions: {
 		showDetailedTaxAnalysis: boolean;
@@ -67,4 +76,19 @@ export function shouldApplyIncomeTax(): boolean {
 export function getTaxYear(): number {
 	const config = loadTaxConfig();
 	return config.taxCalculation.taxYear;
+}
+
+export function getStakingHoldingPeriodMonths(): number {
+	const config = loadTaxConfig();
+	return config.exemptions.stakingHoldingPeriodExemption.months;
+}
+
+export function shouldTrackStakingIncome(): boolean {
+	const config = loadTaxConfig();
+	return config.stakingRewards.trackStakingIncome;
+}
+
+export function getStakingIncomeExemption(): number {
+	const config = loadTaxConfig();
+	return config.stakingRewards.stakingIncomeExemption;
 }

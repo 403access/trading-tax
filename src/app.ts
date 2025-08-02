@@ -6,7 +6,7 @@ import { loadTransactions } from "./transactions/load-transactions";
 import { loadDataSources } from "./config";
 import { logger, LogLevel } from "./core/logger";
 
-export function runApplication(): void {
+export async function runApplication(): Promise<void> {
 	logger.info("🔄 Loading configuration...");
 	const dataSources = loadDataSources();
 
@@ -35,7 +35,7 @@ export function runApplication(): void {
 	logger.log("dataLoading", `✅ Loaded ${allTransactions.length} transactions`);
 	logger.log("taxCalculations", "🧮 Calculating tax implications...");
 
-	const results = processTransactions(allTransactions);
+	const results = await processTransactions(allTransactions);
 
 	logger.log("results", "📋 Generating report...");
 	displayResults(results);

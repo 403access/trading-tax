@@ -7,6 +7,8 @@ import {
 	getBaseAnnualIncome,
 	shouldApplyIncomeTax,
 	getTaxYear,
+	shouldTrackStakingIncome,
+	getStakingIncomeExemption,
 } from "../core/tax-config.js";
 import {
 	calculateProgressiveTax,
@@ -142,6 +144,55 @@ export function displayResults(results: TaxResults): void {
 	logger.info(
 		"✅ German tax law: Gains from crypto held >1 year are tax-exempt!",
 	);
+
+	// Enhanced staking analysis
+	if (shouldTrackStakingIncome() && results.stakingRewards.length > 0) {
+		const stakingExemption = getStakingIncomeExemption();
+		logger.info("");
+		logger.info("=== STAKING REWARDS ANALYSIS ===");
+		logger.info(
+			`Total staking income: €${formatNumber(results.totalStakingIncomeEUR)}`,
+		);
+
+		if (results.totalStakingIncomeEUR <= stakingExemption) {
+			logger.info(
+				`✅ Under €${formatNumber(stakingExemption)} exemption - no additional tax on staking rewards!`,
+			);
+		} else {
+			const taxableStakingIncome =
+				results.totalStakingIncomeEUR - stakingExemption;
+			logger.info(`📋 Staking Income Tax (§22 Nr. 3 EStG):`);
+			logger.info(`   Exemption applied: €${formatNumber(stakingExemption)}`);
+			logger.info(
+				`   Taxable staking income: €${formatNumber(taxableStakingIncome)}`,
+			);
+			logger.info(
+				`   💡 This income is added to your regular income tax calculation`,
+			);
+		}
+
+		logger.info("");
+		logger.info("📊 Staking Rewards Details:");
+		for (const reward of results.stakingRewards) {
+			logger.info(
+				`   ${reward.date}: ${formatNumber(reward.amount)} ${reward.asset} = €${formatNumber(reward.eurValue)} (${reward.source})`,
+			);
+		}
+
+		logger.info("");
+		logger.info(
+			"⚠️  IMPORTANT: Staked crypto has extended 10-year holding period!",
+		);
+		logger.info("💡 Staking rewards are taxable as income when received");
+	} else if (
+		shouldTrackStakingIncome() &&
+		results.stakingRewards.length === 0
+	) {
+		logger.info("");
+		logger.info("=== STAKING REWARDS ANALYSIS ===");
+		logger.info("No staking rewards found in transaction data.");
+	}
+
 	logger.info("");
 
 	// Enhanced tax strategy recommendations
@@ -186,6 +237,9 @@ export function displayResults(results: TaxResults): void {
 	logger.info("Withdrawals:", results.stats.withdrawals);
 	logger.info("Transfers:", results.stats.transfers);
 	logger.info("Fee transactions:", results.stats.fees);
+	if (shouldTrackStakingIncome()) {
+		logger.info("Staking rewards:", results.stats.stakingRewards);
+	}
 	logger.info("");
 
 	// Show remaining purchase queue

@@ -72,6 +72,77 @@ export function parseKrakenRecords(records: KrakenRow[]): UnifiedTransaction[] {
 						transactions.push(createTransaction(row.time, "fee", -fee, 0, row));
 					}
 				}
+			} else if (row.type === "earn") {
+				// Handle staking transactions
+				if (row.subtype === "reward") {
+					// Staking reward received - this is taxable income
+					if (row.asset !== "BTC" && row.asset !== "EUR") {
+						// For non-BTC/EUR assets (like SOL), we need to value them in EUR
+						console.log(
+							`🎁 Staking reward: ${amount} ${row.asset} received on ${row.time}`,
+						);
+
+						const stakingTransaction = createTransaction(
+							row.time,
+							"staking_reward",
+							0, // No BTC amount for non-BTC rewards
+							0, // EUR value to be calculated later with market data
+							row,
+						);
+
+						stakingTransaction.stakingData = {
+							asset: row.asset,
+							amount: amount,
+							rewardAmount: amount,
+							isStaked: true,
+						};
+
+						transactions.push(stakingTransaction);
+					} else if (row.asset === "BTC") {
+						// BTC staking reward
+						console.log(
+							`🎁 BTC staking reward: ${amount} BTC received on ${row.time}`,
+						);
+
+						const stakingTransaction = createTransaction(
+							row.time,
+							"staking_reward",
+							amount,
+							0, // EUR value to be calculated with historical price
+							row,
+						);
+
+						stakingTransaction.stakingData = {
+							asset: "BTC",
+							amount: amount,
+							rewardAmount: amount,
+							isStaked: true,
+						};
+
+						transactions.push(stakingTransaction);
+					}
+				} else if (row.subtype === "allocation") {
+					// Staking allocation - moving assets to/from staking
+					console.log(
+						`🔄 Staking allocation: ${amount} ${row.asset} allocation on ${row.time}`,
+					);
+
+					const stakingTransaction = createTransaction(
+						row.time,
+						"staking_allocation",
+						row.asset === "BTC" ? amount : 0,
+						0,
+						row,
+					);
+
+					stakingTransaction.stakingData = {
+						asset: row.asset,
+						amount: Math.abs(amount), // Amount being staked/unstaked
+						isStaked: amount > 0, // Positive means staking, negative means unstaking
+					};
+
+					transactions.push(stakingTransaction);
+				}
 			}
 		}
 	}

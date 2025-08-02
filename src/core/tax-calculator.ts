@@ -1,30 +1,46 @@
-import type { PurchaseEntry, TaxResults, UnifiedTransaction } from "./types";
+import type {
+	PurchaseEntry,
+	TaxResults,
+	UnifiedTransaction,
+	StakingReward,
+} from "./types";
 import { processBuyTransaction } from "../handlers/buy";
 import { processSellTransaction } from "../handlers/sell";
 import { processWithdrawalTransaction } from "../handlers/withdrawal";
 import { processDepositTransaction } from "../handlers/deposit";
 import { processFeeTransaction } from "../handlers/fee";
 import { processTransferTransaction } from "../handlers/transfer";
+import {
+	processStakingRewardTransaction,
+	processStakingAllocationTransaction,
+} from "../handlers/staking";
 import { detectTransfers, markTransfers } from "../services/transfer-detection";
 import { logger, LogLevel } from "./logger";
 
 // Main tax processing function
-export function processTransactions(
+export async function processTransactions(
 	transactions: UnifiedTransaction[],
-): TaxResults {
+): Promise<TaxResults> {
 	// Step 1: Detect transfers between exchanges
-	logger.log("transferDetection", "🔍 Phase 1: Detecting transfers between exchanges...");
+	logger.log(
+		"transferDetection",
+		"🔍 Phase 1: Detecting transfers between exchanges...",
+	);
 	const detectedTransfers = detectTransfers(transactions);
 	const processedTransactions = markTransfers(transactions, detectedTransfers);
-	
+
 	// Sort all transactions by date (ascending) to ensure FIFO tax compliance
 	// This is critical: oldest transactions must be processed first for proper FIFO calculation
 	processedTransactions.sort(
 		(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
 	);
 
-	logger.log("taxCalculations", "🧮 Phase 2: Processing transactions for tax calculations...");
+	logger.log(
+		"taxCalculations",
+		"🧮 Phase 2: Processing transactions for tax calculations...",
+	);
 	const purchaseQueue: PurchaseEntry[] = [];
+	const stakingRewards: StakingReward[] = [];
 	let totalTaxableGain = 0;
 	let totalExemptGain = 0; // Gains from assets held > 1 year (tax-free)
 	let totalBuyEUR = 0;
@@ -35,6 +51,7 @@ export function processTransactions(
 	let totalDepositedEUR = 0;
 	let totalFeeBTC = 0;
 	let totalTransferredBTC = 0; // New: Track transfers
+	let totalStakingIncomeEUR = 0; // New: Track staking income
 
 	// Stats
 	let buys = 0,
@@ -42,8 +59,9 @@ export function processTransactions(
 		deposits = 0,
 		withdrawals = 0,
 		fees = 0,
-		transfers = 0;
-	
+		transfers = 0,
+		stakingRewardsCount = 0;
+
 	// Track unique transfer IDs to count transfer pairs, not individual transactions
 	const transferIds = new Set<string>();
 
@@ -82,6 +100,17 @@ export function processTransactions(
 				transferIds.add(tx.transferId);
 				transfers++;
 			}
+		} else if (tx.type === "staking_reward") {
+			// Process staking rewards as taxable income
+			const result = await processStakingRewardTransaction(tx);
+			stakingRewards.push(result.stakingReward);
+			totalStakingIncomeEUR += result.eurValue;
+			stakingRewardsCount++;
+		} else if (tx.type === "staking_allocation") {
+			// Process staking allocation (affects holding period)
+			processStakingAllocationTransaction(tx);
+			// Note: This doesn't affect current tax calculations but would be used
+			// for tracking which assets have extended holding periods
 		}
 	}
 
@@ -96,6 +125,8 @@ export function processTransactions(
 		totalDepositedEUR,
 		totalFeeBTC,
 		totalTransferredBTC,
+		stakingRewards,
+		totalStakingIncomeEUR,
 		stats: {
 			buys,
 			sells,
@@ -103,6 +134,7 @@ export function processTransactions(
 			withdrawals,
 			fees,
 			transfers,
+			stakingRewards: stakingRewardsCount,
 		},
 		remainingPurchases: purchaseQueue,
 	};

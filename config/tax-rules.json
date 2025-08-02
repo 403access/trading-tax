@@ -4,12 +4,21 @@
 		"holdingPeriodExemption": {
 			"months": 12,
 			"description": "§23 EStG - Private sales gains exempt after 1 year"
+		},
+		"stakingHoldingPeriodExemption": {
+			"months": 120,
+			"description": "§23 EStG - Staked crypto gains exempt after 10 years due to income generation"
 		}
 	},
 	"taxCalculation": {
-		"baseAnnualIncome": 0,
+		"baseAnnualIncome": 40000,
 		"applyIncomeTax": true,
 		"taxYear": 2025
+	},
+	"stakingRewards": {
+		"trackStakingIncome": true,
+		"stakingIncomeExemption": 256,
+		"description": "§22 Nr. 3 EStG - Staking rewards as sonstige Einkünfte with €256 annual exemption"
 	},
 	"displayOptions": {
 		"showDetailedTaxAnalysis": true,
