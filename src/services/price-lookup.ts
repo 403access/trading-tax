@@ -24,66 +24,78 @@ function loadPriceData(): Map<string, number> {
 
 	// Load data sources configuration
 	const dataSources = loadDataSources();
+	
+	// Dynamic year range from 2016 to current year + 1 for future data
+	const currentYear = new Date().getFullYear();
+	const startYear = 2016;
+	const endYear = Math.max(currentYear + 1, 2025); // At least through 2025
+	
+	let totalLoadedRecords = 0;
+	let successfulYears: number[] = [];
+	let failedYears: number[] = [];
 
-	// Load 2016 data
-	try {
-		const path2016 = dataSources.historicalPrices["btc-eur-2016"];
-		if (!path2016) {
-			throw new Error("2016 price data path not configured");
-		}
-		const content2016 = fs.readFileSync(path2016, "utf8");
-		// Remove UTF-8 BOM if present
-		const cleanContent2016 = content2016.replace(/^\uFEFF/, "");
-
-		const records2016 = parse(cleanContent2016, {
-			delimiter: ",",
-			columns: true,
-			skip_empty_lines: true,
-			trim: true,
-		}) as HistoricalPriceRow[];
-
-		for (const row of records2016) {
-			const date = parseGermanDate(row.Datum);
-			const price = parseGermanNumber(row.Zuletzt);
-			if (date && price > 0) {
-				priceCache.set(date, price);
+	// Load price data for each year dynamically
+	for (let year = startYear; year <= endYear; year++) {
+		const priceKey = `btc-eur-${year}`;
+		
+		try {
+			const pricePath = dataSources.historicalPrices[priceKey];
+			if (!pricePath) {
+				logger.logWithLevel("priceData", LogLevel.DEBUG, `No price data configured for ${year}`);
+				continue;
 			}
+			
+			// Check if file exists
+			if (!fs.existsSync(pricePath)) {
+				logger.logWithLevel("priceData", LogLevel.DEBUG, `Price data file not found for ${year}: ${pricePath}`);
+				continue;
+			}
+
+			const content = fs.readFileSync(pricePath, "utf8");
+			// Remove UTF-8 BOM if present
+			const cleanContent = content.replace(/^\uFEFF/, "");
+
+			const records = parse(cleanContent, {
+				delimiter: ",",
+				columns: true,
+				skip_empty_lines: true,
+				trim: true,
+			}) as HistoricalPriceRow[];
+
+			let yearRecords = 0;
+			for (const row of records) {
+				const date = parseGermanDate(row.Datum);
+				const price = parseGermanNumber(row.Zuletzt);
+				if (date && price > 0) {
+					priceCache.set(date, price);
+					yearRecords++;
+				}
+			}
+			
+			if (yearRecords > 0) {
+				totalLoadedRecords += yearRecords;
+				successfulYears.push(year);
+				logger.logWithLevel("priceData", LogLevel.DEBUG, `Loaded ${yearRecords} price points from ${year}`);
+			}
+		} catch (error) {
+			failedYears.push(year);
+			logger.logWithLevel("priceData", LogLevel.DEBUG, `Could not load price data for ${year}: ${error instanceof Error ? error.message : 'Unknown error'}`);
 		}
-		logger.logWithLevel("priceData", LogLevel.DEBUG, `Loaded ${records2016.length} price points from 2016`);
-	} catch {
-		logger.logWithLevel("priceData", LogLevel.WARN, "Warning: Could not load 2016 price data");
 	}
 
-	// Load 2017 data
-	try {
-		const path2017 = dataSources.historicalPrices["btc-eur-2017"];
-		if (!path2017) {
-			throw new Error("2017 price data path not configured");
-		}
-		const content2017 = fs.readFileSync(path2017, "utf8");
-		// Remove UTF-8 BOM if present
-		const cleanContent2017 = content2017.replace(/^\uFEFF/, "");
-
-		const records2017 = parse(cleanContent2017, {
-			delimiter: ",",
-			columns: true,
-			skip_empty_lines: true,
-			trim: true,
-		}) as HistoricalPriceRow[];
-
-		for (const row of records2017) {
-			const date = parseGermanDate(row.Datum);
-			const price = parseGermanNumber(row.Zuletzt);
-			if (date && price > 0) {
-				priceCache.set(date, price);
-			}
-		}
-		logger.logWithLevel("priceData", LogLevel.DEBUG, `Loaded ${records2017.length} price points from 2017`);
-	} catch {
-		logger.logWithLevel("priceData", LogLevel.WARN, "Warning: Could not load 2017 price data");
+	// Summary logging
+	if (successfulYears.length > 0) {
+		const yearRange = successfulYears.length === 1 
+			? String(successfulYears[0])
+			: `${Math.min(...successfulYears)}-${Math.max(...successfulYears)}`;
+		logger.log("priceData", `Loaded ${totalLoadedRecords} historical price points from ${successfulYears.length} years (${yearRange})`);
+	} else {
+		logger.logWithLevel("priceData", LogLevel.WARN, "No historical price data could be loaded");
 	}
 
-	logger.log("priceData", `Loaded ${priceCache.size} historical price points`);
+	if (failedYears.length > 0) {
+		logger.logWithLevel("priceData", LogLevel.DEBUG, `Failed to load data for years: ${failedYears.join(', ')}`);
+	}
 
 	// Debug: Show date range of loaded data
 	if (priceCache.size > 0) {
