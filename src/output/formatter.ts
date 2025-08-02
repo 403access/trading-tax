@@ -4,8 +4,14 @@ import { logger } from "../core/logger";
 import {
 	getAnnualExemption,
 	shouldShowOptimizationTips,
+	getBaseAnnualIncome,
+	shouldApplyIncomeTax,
+	getTaxYear,
 } from "../core/tax-config.js";
-import { calculateProgressiveTax } from "../packages/tax/index.js";
+import {
+	calculateProgressiveTax,
+	calculateTaxForYear,
+} from "../packages/tax/index.js";
 
 // Output tax calculation results
 export function displayResults(results: TaxResults): void {
@@ -41,9 +47,11 @@ export function displayResults(results: TaxResults): void {
 		formatNumber(results.totalTaxableGain + results.totalExemptGain),
 	);
 
-	// Enhanced German tax analysis with configurable exemption and progressive tax calculations
-	const annualExemption = getAnnualExemption(); // Get exemption from configuration
-	const currentYear = new Date().getFullYear(); // Use current year for tax calculations
+	// Enhanced German tax analysis with configurable exemption and income tax calculations
+	const annualExemption = getAnnualExemption();
+	const baseIncome = getBaseAnnualIncome();
+	const applyIncomeTax = shouldApplyIncomeTax();
+	const taxYear = getTaxYear();
 
 	if (results.totalTaxableGain <= annualExemption) {
 		logger.info(
@@ -63,21 +71,55 @@ export function displayResults(results: TaxResults): void {
 			`   Taxable amount after exemption: €${formatNumber(taxableAfterExemption)}`,
 		);
 
-		// Calculate progressive tax estimates for different income scenarios using year-appropriate calculations
+		if (baseIncome > 0) {
+			logger.info(`   Base annual income: €${formatNumber(baseIncome)}`);
+			logger.info(
+				`   Total taxable income: €${formatNumber(baseIncome + taxableAfterExemption)}`,
+			);
+		}
+
+		// Calculate actual income tax if enabled
+		if (applyIncomeTax && taxableAfterExemption > 0) {
+			if (baseIncome > 0) {
+				// Calculate additional tax on crypto gains
+				const { tax: additionalTax, rate } = calculateProgressiveTax(
+					baseIncome,
+					taxableAfterExemption,
+					taxYear,
+				);
+				logger.info("");
+				logger.info("💰 Income Tax Calculation:");
+				logger.info(
+					`   Additional tax on crypto gains: €${formatNumber(additionalTax)}`,
+				);
+				logger.info(`   Effective marginal rate: ${(rate * 100).toFixed(1)}%`);
+			} else {
+				// Calculate total tax on crypto gains only
+				const totalTax = calculateTaxForYear(taxableAfterExemption, taxYear);
+				const effectiveRate =
+					taxableAfterExemption > 0 ? totalTax / taxableAfterExemption : 0;
+				logger.info("");
+				logger.info("💰 Income Tax Calculation:");
+				logger.info(`   Total tax on crypto gains: €${formatNumber(totalTax)}`);
+				logger.info(`   Effective rate: ${(effectiveRate * 100).toFixed(1)}%`);
+			}
+		}
+
+		// Show progressive scenarios for comparison
 		if (taxableAfterExemption > 0) {
-			// Show progressive calculations for specific income scenarios
+			// Show progressive calculations for different income scenarios
 			const scenarios = [
 				{ income: 30000, label: "€30,000 income" },
 				{ income: 50000, label: "€50,000 income" },
 				{ income: 80000, label: "€80,000 income" },
 			];
 
-			logger.info("   Progressive tax scenarios:");
+			logger.info("   Progressive tax scenarios (for comparison):");
 			for (const scenario of scenarios) {
 				const { tax, rate } = calculateProgressiveTax(
 					scenario.income,
 					taxableAfterExemption,
-					currentYear,
+					taxYear,
 				);
 				const percentage = (rate * 100).toFixed(1);
 				logger.info(

@@ -9,6 +9,11 @@ interface TaxConfig {
 			description: string;
 		};
 	};
+	taxCalculation: {
+		baseAnnualIncome: number;
+		applyIncomeTax: boolean;
+		taxYear: number;
+	};
 	displayOptions: {
 		showDetailedTaxAnalysis: boolean;
 		showOptimizationTips: boolean;
@@ -47,4 +52,19 @@ export function shouldShowDetailedAnalysis(): boolean {
 export function shouldShowOptimizationTips(): boolean {
 	const config = loadTaxConfig();
 	return config.displayOptions.showOptimizationTips;
+}
+
+export function getBaseAnnualIncome(): number {
+	const config = loadTaxConfig();
+	return config.taxCalculation.baseAnnualIncome;
+}
+
+export function shouldApplyIncomeTax(): boolean {
+	const config = loadTaxConfig();
+	return config.taxCalculation.applyIncomeTax;
+}
+
+export function getTaxYear(): number {
+	const config = loadTaxConfig();
+	return config.taxCalculation.taxYear;
 }

@@ -6,6 +6,11 @@
 			"description": "§23 EStG - Private sales gains exempt after 1 year"
 		}
 	},
+	"taxCalculation": {
+		"baseAnnualIncome": 0,
+		"applyIncomeTax": true,
+		"taxYear": 2025
+	},
 	"displayOptions": {
 		"showDetailedTaxAnalysis": true,
 		"showOptimizationTips": true

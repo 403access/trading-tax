@@ -35,6 +35,11 @@ The configuration file contains only the essential settings:
             "description": "§23 EStG - Private sales gains exempt after 1 year"
         }
     },
+    "taxCalculation": {
+        "baseAnnualIncome": 40000,
+        "applyIncomeTax": true,
+        "taxYear": 2025
+    },
     "displayOptions": {
         "showDetailedTaxAnalysis": true,
         "showOptimizationTips": true
@@ -42,7 +47,12 @@ The configuration file contains only the essential settings:
 }
 ```
 
-**Key Point:** All actual tax calculations use official German tax formulas from the tax package. This configuration only controls exemptions and display preferences.
+**Key Features:**
+- **`baseAnnualIncome`**: Your other income sources (salary, business, etc.) - crypto gains are added on top
+- **`applyIncomeTax`**: Whether to calculate actual German income tax on the taxable crypto gains
+- **`taxYear`**: Which year's tax formulas to use (2016-2025 supported)
+
+**Key Point:** All tax calculations use official German tax formulas from the tax package.
 
 ## ⚙️ Key Configurable Parameters
 
