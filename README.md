@@ -17,38 +17,38 @@ A German tax law compliant cryptocurrency tax calculator with advanced transfer 
 ## 🏗️ Architecture
 
 ```
-├── config/                   # Configuration files
-│   ├── data-sources.json    # Data source mappings
-│   └── logger.json          # Optional logging overrides
-├── data/                    # Transaction data (gitignored)
-│   ├── transactions/        # CSV transaction files
-│   └── historical-prices/   # Price data
+├── config/                         # Configuration files
+│   ├── data-sources.json           # Data source mappings
+│   └── logger.json                 # Optional logging overrides
+├── data/                           # Transaction data (gitignored)
+│   ├── transactions/               # CSV transaction files
+│   └── historical-prices/          # Price data
 ├── src/
-│   ├── core/               # Core business logic
-│   │   ├── types.ts        # Type definitions
-│   │   ├── utils.ts        # Utility functions
-│   │   ├── tax-calculator.ts # Main processing engine
-│   │   └── logger.ts       # Type-safe logging system
-│   ├── handlers/           # Transaction type handlers
-│   │   ├── buy.ts         # Buy transaction processing
-│   │   ├── sell.ts        # Sell transaction processing
-│   │   ├── withdrawal.ts  # Withdrawal processing
-│   │   ├── deposit.ts     # Deposit processing
-│   │   ├── fee.ts         # Fee processing
-│   │   └── transfer.ts    # Transfer processing
-│   ├── parsers/           # Exchange-specific parsers
-│   │   ├── bitcoin-de.ts  # Bitcoin.de CSV parser
-│   │   └── kraken.ts      # Kraken CSV parser
-│   ├── services/          # Business services
-│   │   ├── transfer-detection.ts # Transfer detection logic
-│   │   └── price-lookup.ts      # Historical price lookup
-│   ├── output/            # Result formatting
-│   │   └── display.ts     # Report generation
-│   ├── transactions/      # Transaction loading
+│   ├── core/                       # Core business logic
+│   │   ├── types.ts                # Type definitions
+│   │   ├── utils.ts                # Utility functions
+│   │   ├── tax-calculator.ts       # Main processing engine
+│   │   └── logger.ts               # Type-safe logging system
+│   ├── handlers/                   # Transaction type handlers
+│   │   ├── buy.ts                  # Buy transaction processing
+│   │   ├── sell.ts                 # Sell transaction processing
+│   │   ├── withdrawal.ts           # Withdrawal processing
+│   │   ├── deposit.ts              # Deposit processing
+│   │   ├── fee.ts                  # Fee processing
+│   │   └── transfer.ts             # Transfer processing
+│   ├── parsers/                    # Exchange-specific parsers
+│   │   ├── bitcoin-de.ts           # Bitcoin.de CSV parser
+│   │   └── kraken.ts               # Kraken CSV parser
+│   ├── services/                   # Business services
+│   │   ├── transfer-detection.ts   # Transfer detection logic
+│   │   └── price-lookup.ts         # Historical price lookup
+│   ├── output/                     # Result formatting
+│   │   └── display.ts              # Report generation
+│   ├── transactions/               # Transaction loading
 │   │   └── load-transactions.ts
-│   └── app.ts             # Application orchestration
-├── docs/                  # Documentation
-└── index.ts              # Entry point
+│   └── app.ts                      # Application orchestration
+├── docs/                           # Documentation
+└── index.ts                        # Entry point
 ```
 
 ## 🚀 Quick Start
