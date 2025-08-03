@@ -1,5 +1,3 @@
-export * from "./output";
-export * from "./parsers/index";
-export * from "./tax-calculator";
-export * from "./types";
-export * from "./utils";
+// Main exports - now using domain architecture
+export * from "./domains";
+export * from "./app";

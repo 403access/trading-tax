@@ -1,5 +1,5 @@
 import { runApplication } from "./src/app";
-import { logger } from "./src/core/logger";
+import { logger } from "./src/domains/shared";
 
 async function main() {
 	try {
