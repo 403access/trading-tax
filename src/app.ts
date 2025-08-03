@@ -1,10 +1,14 @@
-import { processTransactions, type UnifiedTransaction } from "./core/index";
-import { displayResults } from "./output/index";
-import { parseBitcoinDe } from "./parsers/bitcoin-de";
-import { parseKraken } from "./parsers/kraken";
-import { loadTransactions } from "./transactions/load-transactions";
-import { loadDataSources } from "./config";
-import { logger, LogLevel } from "./core/logger";
+// Domain-based imports using barrel exports
+import { processTransactions } from "./domains/tax-calculations";
+import type { UnifiedTransaction } from "./domains/shared";
+import { displayResults } from "./domains/reporting";
+import {
+	loadTransactions,
+	parseBitcoinDe,
+	parseKraken,
+} from "./domains/data-integration";
+import { loadDataSources } from "./domains/infrastructure";
+import { logger } from "./domains/shared";
 
 export async function runApplication(): Promise<void> {
 	logger.info("🔄 Loading configuration...");
