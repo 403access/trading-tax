@@ -4,12 +4,14 @@ function calcFormula(zvE: number, formula: TaxZoneFormula): number {
 	switch (formula.type) {
 		case "zero":
 			return 0;
-		case "progression1":
+		case "progression1": {
 			const y = (zvE - formula.yOffset) / 10000;
 			return (formula.k * y + formula.m) * y;
-		case "progression2":
+		}
+		case "progression2": {
 			const z = (zvE - formula.zOffset) / 10000;
 			return (formula.k * z + formula.m) * z + formula.base;
+		}
 		case "linear":
 			return formula.rate * zvE - formula.offset;
 	}
