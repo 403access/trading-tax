@@ -14,89 +14,118 @@ import {
 	processStakingRewardTransaction,
 	processStakingAllocationTransaction,
 } from "../handlers/staking";
-import { detectTransfers, markTransfers } from "../services/transfer-detection";
-import { logger, LogLevel } from "./logger";
+import { logger } from "./logger";
 
-// Main tax processing function
+// Main entry point that loads config and calculates tax
 export async function processTransactions(
 	transactions: UnifiedTransaction[],
 ): Promise<TaxResults> {
-	// Step 1: Detect transfers between exchanges
-	logger.log(
-		"transferDetection",
-		"🔍 Phase 1: Detecting transfers between exchanges...",
-	);
-	const detectedTransfers = detectTransfers(transactions);
-	const processedTransactions = markTransfers(transactions, detectedTransfers);
+	// For now, use hardcoded config - will be improved later
+	const taxRules = {
+		holdingPeriodExemption: 12, // months
+	};
+	return calculateTax(transactions, taxRules);
+}
 
-	// Sort all transactions by date (ascending) to ensure FIFO tax compliance
-	// This is critical: oldest transactions must be processed first for proper FIFO calculation
-	processedTransactions.sort(
-		(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-	);
+export async function calculateTax(
+	transactions: UnifiedTransaction[],
+	taxRules: any,
+): Promise<TaxResults> {
+	logger.info(`📊 Processing ${transactions.length} transactions`);
 
-	logger.log(
-		"taxCalculations",
-		"🧮 Phase 2: Processing transactions for tax calculations...",
-	);
+	const transferIds = new Set<string>();
+	const processedTransactions = new Set<string>();
+
+	// Initialize totals
 	const purchaseQueue: PurchaseEntry[] = [];
 	const stakingRewards: StakingReward[] = [];
 	let totalTaxableGain = 0;
 	let totalExemptGain = 0; // Gains from assets held > 1 year (tax-free)
 	let totalBuyEUR = 0;
 	let totalSellEUR = 0;
-	let totalWithdrawnBTC = 0;
+	const tradingByYear: Record<string, { buyEUR: number; sellEUR: number }> = {}; // New: Year-based trading totals
+	const totalWithdrawnAssets: Record<string, number> = {};
 	let totalWithdrawnEUR = 0;
-	let totalDepositedBTC = 0;
+	const totalDepositedAssets: Record<string, number> = {};
 	let totalDepositedEUR = 0;
-	let totalFeeBTC = 0;
-	let totalTransferredBTC = 0; // New: Track transfers
+	const totalFeeAssets: Record<string, number> = {};
+	const totalTransferredAssets: Record<string, number> = {};
 	let totalStakingIncomeEUR = 0; // New: Track staking income
 
-	// Stats
-	let buys = 0,
-		sells = 0,
-		deposits = 0,
-		withdrawals = 0,
-		fees = 0,
-		transfers = 0,
-		stakingRewardsCount = 0;
+	// Helper function to add to asset totals
+	const addToAssetTotal = (
+		totals: Record<string, number>,
+		asset: string,
+		amount: number,
+	) => {
+		if (!totals[asset]) {
+			totals[asset] = 0;
+		}
+		totals[asset] += amount;
+	};
 
-	// Track unique transfer IDs to count transfer pairs, not individual transactions
-	const transferIds = new Set<string>();
+	// Helper function to add to year-based trading totals
+	const addToYearTotal = (
+		date: string,
+		buyEUR: number = 0,
+		sellEUR: number = 0,
+	) => {
+		const year = new Date(date).getFullYear().toString();
+		if (!tradingByYear[year]) {
+			tradingByYear[year] = { buyEUR: 0, sellEUR: 0 };
+		}
+		tradingByYear[year].buyEUR += buyEUR;
+		tradingByYear[year].sellEUR += sellEUR;
+	};
 
-	for (const tx of processedTransactions) {
+	// Statistics
+	let buys = 0;
+	let sells = 0;
+	let withdrawals = 0;
+	let deposits = 0;
+	let fees = 0;
+	let transfers = 0;
+	let stakingRewardsCount = 0;
+
+	// Process transactions in chronological order
+	for (const tx of transactions) {
 		if (tx.type === "buy") {
-			const eurAmount = processBuyTransaction(tx, purchaseQueue);
-			totalBuyEUR += eurAmount;
+			processBuyTransaction(tx, purchaseQueue);
+			const buyAmount = Math.abs(tx.eurAmount); // Buys should be positive costs
+			totalBuyEUR += buyAmount;
+			addToYearTotal(tx.date, buyAmount, 0); // Track buy by year
 			buys++;
 		} else if (tx.type === "sell") {
 			const result = processSellTransaction(tx, purchaseQueue);
 			totalSellEUR += result.eurAmount;
+			addToYearTotal(tx.date, 0, result.eurAmount); // Track sell by year
 			totalTaxableGain += result.taxableGain;
 			totalExemptGain += result.exemptGain;
 			sells++;
 		} else if (tx.type === "withdrawal") {
 			const result = processWithdrawalTransaction(tx, purchaseQueue);
-			totalWithdrawnBTC += result.btcAmount;
-			totalWithdrawnEUR += result.eurValue;
+			addToAssetTotal(totalWithdrawnAssets, tx.asset, tx.assetAmount);
+			// Only add EUR value if it's a valid number to prevent NaN accumulation
+			if (!Number.isNaN(result.eurValue) && Number.isFinite(result.eurValue)) {
+				totalWithdrawnEUR += result.eurValue;
+			}
 			totalTaxableGain += result.taxableGain;
 			totalExemptGain += result.exemptGain;
 			withdrawals++;
 		} else if (tx.type === "deposit") {
 			const result = processDepositTransaction(tx);
-			totalDepositedBTC += result.depositedBTC;
+			addToAssetTotal(totalDepositedAssets, tx.asset, tx.assetAmount);
 			totalDepositedEUR += result.depositedEUR;
 			deposits++;
 		} else if (tx.type === "fee") {
-			const feeBTC = processFeeTransaction(tx);
-			totalFeeBTC += feeBTC;
+			const feeAmount = processFeeTransaction(tx);
+			addToAssetTotal(totalFeeAssets, tx.asset, feeAmount);
 			fees++;
 		} else if (tx.type === "transfer") {
-			const result = processTransferTransaction(tx);
-			// Only count the transferred BTC once per transfer pair
+			processTransferTransaction(tx);
+			// Only count the transferred assets once per transfer pair
 			if (tx.transferId && !transferIds.has(tx.transferId)) {
-				totalTransferredBTC += result.transferredBTC;
+				addToAssetTotal(totalTransferredAssets, tx.asset, tx.assetAmount);
 				transferIds.add(tx.transferId);
 				transfers++;
 			}
@@ -119,12 +148,13 @@ export async function processTransactions(
 		totalExemptGain,
 		totalBuyEUR,
 		totalSellEUR,
-		totalWithdrawnBTC,
+		tradingByYear,
+		totalWithdrawnAssets,
 		totalWithdrawnEUR,
-		totalDepositedBTC,
+		totalDepositedAssets,
 		totalDepositedEUR,
-		totalFeeBTC,
-		totalTransferredBTC,
+		totalFeeAssets,
+		totalTransferredAssets,
 		stakingRewards,
 		totalStakingIncomeEUR,
 		stats: {

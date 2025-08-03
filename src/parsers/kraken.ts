@@ -23,13 +23,15 @@ export function parseKrakenRecords(records: KrakenRow[]): UnifiedTransaction[] {
 	const createTransaction = (
 		date: string,
 		type: UnifiedTransaction["type"],
-		btcAmount: number,
+		asset: string,
+		assetAmount: number,
 		eurAmount: number,
-		originalData: KrakenRow | { btcRow: KrakenRow; eurRow: KrakenRow },
+		originalData: KrakenRow | { assetRow: KrakenRow; eurRow: KrakenRow },
 	): UnifiedTransaction => ({
 		date,
 		type,
-		btcAmount,
+		asset,
+		assetAmount,
 		eurAmount,
 		source: "kraken",
 		originalData,
@@ -48,79 +50,63 @@ export function parseKrakenRecords(records: KrakenRow[]): UnifiedTransaction[] {
 			const fee = toNumber(row.fee);
 
 			if (row.type === "deposit") {
-				if (row.asset === "BTC") {
+				if (row.asset !== "EUR") {
+					// For crypto deposits (BTC, ETH, SOL, etc.)
 					transactions.push(
-						createTransaction(row.time, "deposit", amount, 0, row),
-					);
-				} else if (row.asset === "EUR") {
-					transactions.push(
-						createTransaction(row.time, "deposit", 0, amount, row),
+						createTransaction(row.time, "deposit", row.asset, amount, 0, row),
 					);
 				} else {
-					console.warn(
-						`Ignoring deposit of unsupported asset: ${row.asset} at ${row.time}`,
+					// For EUR deposits
+					transactions.push(
+						createTransaction(row.time, "deposit", "EUR", 0, amount, row),
 					);
 				}
 			} else if (row.type === "withdrawal") {
-				if (row.asset === "BTC") {
+				if (row.asset !== "EUR") {
+					// For crypto withdrawals
 					transactions.push(
-						createTransaction(row.time, "withdrawal", amount, 0, row),
+						createTransaction(
+							row.time,
+							"withdrawal",
+							row.asset,
+							amount,
+							0,
+							row,
+						),
 					);
 
 					// Also add withdrawal fee as separate transaction
 					if (fee > 0) {
-						transactions.push(createTransaction(row.time, "fee", -fee, 0, row));
+						transactions.push(
+							createTransaction(row.time, "fee", row.asset, -fee, 0, row),
+						);
 					}
 				}
 			} else if (row.type === "earn") {
 				// Handle staking transactions
 				if (row.subtype === "reward") {
 					// Staking reward received - this is taxable income
-					if (row.asset !== "BTC" && row.asset !== "EUR") {
-						// For non-BTC/EUR assets (like SOL), we need to value them in EUR
-						console.log(
-							`🎁 Staking reward: ${amount} ${row.asset} received on ${row.time}`,
-						);
+					console.log(
+						`🎁 Staking reward: ${amount} ${row.asset} received on ${row.time}`,
+					);
 
-						const stakingTransaction = createTransaction(
-							row.time,
-							"staking_reward",
-							0, // No BTC amount for non-BTC rewards
-							0, // EUR value to be calculated later with market data
-							row,
-						);
+					const stakingTransaction = createTransaction(
+						row.time,
+						"staking_reward",
+						row.asset,
+						amount, // Asset amount
+						0, // EUR value to be calculated later with market data
+						row,
+					);
 
-						stakingTransaction.stakingData = {
-							asset: row.asset,
-							amount: amount,
-							rewardAmount: amount,
-							isStaked: true,
-						};
+					stakingTransaction.stakingData = {
+						asset: row.asset,
+						amount: amount,
+						rewardAmount: amount,
+						isStaked: true,
+					};
 
-						transactions.push(stakingTransaction);
-					} else if (row.asset === "BTC") {
-						// BTC staking reward
-						console.log(
-							`🎁 BTC staking reward: ${amount} BTC received on ${row.time}`,
-						);
-
-						const stakingTransaction = createTransaction(
-							row.time,
-							"staking_reward",
-							amount,
-							0, // EUR value to be calculated with historical price
-							row,
-						);
-
-						stakingTransaction.stakingData = {
-							asset: "BTC",
-							amount: amount,
-							rewardAmount: amount,
-							isStaked: true,
-						};
-
-						transactions.push(stakingTransaction);
-					}
+					transactions.push(stakingTransaction);
 				} else if (row.subtype === "allocation") {
 					// Staking allocation - moving assets to/from staking
 					console.log(
@@ -130,7 +116,8 @@ export function parseKrakenRecords(records: KrakenRow[]): UnifiedTransaction[] {
 					const stakingTransaction = createTransaction(
 						row.time,
 						"staking_allocation",
-						row.asset === "BTC" ? amount : 0,
+						row.asset,
+						amount, // Asset amount (can be negative for unstaking)
 						0,
 						row,
 					);
@@ -149,37 +136,46 @@ export function parseKrakenRecords(records: KrakenRow[]): UnifiedTransaction[] {
 
 	// Process trade groups
 	for (const tradeRows of tradeGroups.values()) {
-		const btcRow = tradeRows.find((r) => r.asset === "BTC");
+		// Find the crypto asset row (BTC, ETH, SOL, etc.) and EUR row
 		const eurRow = tradeRows.find((r) => r.asset === "EUR");
+		const assetRow = tradeRows.find((r) => r.asset !== "EUR");
 
-		if (btcRow && eurRow) {
-			const btcAmount = toNumber(btcRow.amount);
+		if (assetRow && eurRow) {
+			const assetAmount = toNumber(assetRow.amount);
 			const eurAmount = toNumber(eurRow.amount);
-			const btcFee = toNumber(btcRow.fee);
+			const assetFee = toNumber(assetRow.fee);
 			const eurFee = toNumber(eurRow.fee);
 
-			// Determine if it's a buy or sell based on BTC amount direction
-			const isBuy = btcAmount > 0;
+			// Determine if it's a buy or sell based on asset amount direction
+			const isBuy = assetAmount > 0;
 
 			transactions.push(
 				createTransaction(
-					btcRow.time,
+					assetRow.time,
 					isBuy ? "buy" : "sell",
-					btcAmount,
+					assetRow.asset,
+					assetAmount,
 					eurAmount,
-					{ btcRow, eurRow },
+					{ assetRow, eurRow },
 				),
 			);
 
 			// Add fees as separate transactions
-			if (btcFee > 0) {
+			if (assetFee > 0) {
 				transactions.push(
-					createTransaction(btcRow.time, "fee", -btcFee, 0, btcRow),
+					createTransaction(
+						assetRow.time,
+						"fee",
+						assetRow.asset,
+						-assetFee,
+						0,
+						assetRow,
+					),
 				);
 			}
 			if (eurFee > 0) {
 				transactions.push(
-					createTransaction(eurRow.time, "fee", 0, -eurFee, eurRow),
+					createTransaction(eurRow.time, "fee", "EUR", 0, -eurFee, eurRow),
 				);
 			}
 		}

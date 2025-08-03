@@ -10,7 +10,8 @@ export interface UnifiedTransaction {
 		| "transfer"
 		| "staking_reward"
 		| "staking_allocation";
-	btcAmount: number; // positive for incoming, negative for outgoing
+	asset: string; // The cryptocurrency (BTC, ETH, SOL, etc.)
+	assetAmount: number; // positive for incoming, negative for outgoing
 	eurAmount: number; // positive for incoming, negative for outgoing
 	source: "bitcoin.de" | "kraken";
 	originalData: unknown;
@@ -61,10 +62,11 @@ export type KrakenRow = {
 
 // FIFO purchase entry for tax calculation
 export interface PurchaseEntry {
-	amount: number; // BTC amount
-	pricePerBTC: number; // EUR per BTC
+	asset: string; // The cryptocurrency (BTC, ETH, SOL, etc.)
+	amount: number; // Asset amount
+	pricePerAsset: number; // EUR per asset unit
 	date: string;
-	remaining: number; // remaining BTC amount
+	remaining: number; // remaining asset amount
 	source: string;
 	isStaked?: boolean; // Whether this purchase was from staked crypto
 }
@@ -84,12 +86,13 @@ export interface TaxResults {
 	totalExemptGain: number;
 	totalBuyEUR: number;
 	totalSellEUR: number;
-	totalWithdrawnBTC: number;
+	tradingByYear: Record<string, { buyEUR: number; sellEUR: number }>; // New: Year-based trading totals
+	totalWithdrawnAssets: Record<string, number>; // Asset symbol -> amount withdrawn
 	totalWithdrawnEUR: number;
-	totalDepositedBTC: number;
+	totalDepositedAssets: Record<string, number>; // Asset symbol -> amount deposited
 	totalDepositedEUR: number;
-	totalFeeBTC: number;
-	totalTransferredBTC: number; // New: Amount moved between exchanges
+	totalFeeAssets: Record<string, number>; // Asset symbol -> fee amount
+	totalTransferredAssets: Record<string, number>; // Asset symbol -> amount transferred
 	stakingRewards: StakingReward[]; // New: Staking rewards received
 	totalStakingIncomeEUR: number; // New: Total EUR value of staking rewards
 	stats: {
@@ -102,4 +105,16 @@ export interface TaxResults {
 		stakingRewards: number; // New: Count of staking reward transactions
 	};
 	remainingPurchases: PurchaseEntry[];
+}
+
+// Helper function to add to asset totals
+export function addToAssetTotal(
+	assetTotals: Record<string, number>,
+	asset: string,
+	amount: number,
+): void {
+	if (!assetTotals[asset]) {
+		assetTotals[asset] = 0;
+	}
+	assetTotals[asset] += amount;
 }

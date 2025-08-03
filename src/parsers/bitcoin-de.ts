@@ -24,13 +24,14 @@ export function parseBitcoinDeRecords(
 	const createTransaction = (
 		date: string,
 		type: UnifiedTransaction["type"],
-		btcAmount: number,
+		assetAmount: number,
 		eurAmount: number,
 		row: BitcoinDeRow,
 	): UnifiedTransaction => ({
 		date,
 		type,
-		btcAmount,
+		asset: row.Währung, // Use the actual currency from the CSV
+		assetAmount,
 		eurAmount,
 		source: "bitcoin.de",
 		originalData: row,

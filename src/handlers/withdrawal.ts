@@ -1,9 +1,7 @@
 import type { PurchaseEntry, UnifiedTransaction } from "../core/types";
-import { formatBTC, formatNumber, isHeldOverOneYear, getHoldingPeriodDetails } from "../core/utils";
 import { getBitcoinPrice } from "../services/price-lookup";
 
 export interface WithdrawalResult {
-	btcAmount: number;
 	eurValue: number;
 	taxableGain: number;
 	exemptGain: number;
@@ -13,7 +11,17 @@ export function processWithdrawalTransaction(
 	tx: UnifiedTransaction,
 	purchaseQueue: PurchaseEntry[],
 ): WithdrawalResult {
-	const btcAmount = Math.abs(tx.btcAmount);
+	const assetAmount = Math.abs(tx.assetAmount);
+
+	// For now, only handle Bitcoin withdrawals properly
+	// Other assets will return 0 EUR value until proper price lookup is implemented
+	if (tx.asset !== "BTC") {
+		return {
+			eurValue: 0,
+			taxableGain: 0,
+			exemptGain: 0,
+		};
+	}
 
 	// Get historical Bitcoin price for this withdrawal date
 	const historicalPrice = getBitcoinPrice(tx.date);
@@ -23,78 +31,20 @@ export function processWithdrawalTransaction(
 	if (historicalPrice !== null) {
 		estimatedMarketRate = historicalPrice;
 	} else if (purchaseQueue.length > 0) {
-		// Fallback to most recent purchase price
+		// Use most recent purchase price as fallback estimate
+		const relevantPurchases = purchaseQueue.filter((p) => p.asset === tx.asset);
 		estimatedMarketRate =
-			purchaseQueue[purchaseQueue.length - 1]?.pricePerBTC || 0;
-		console.log(
-			`⚠️  No historical price found for ${tx.date}, using last purchase price: €${formatNumber(estimatedMarketRate)}/BTC`,
-		);
-	} else {
-		console.log(`❌ No price data available for withdrawal on ${tx.date}`);
+			relevantPurchases.length > 0
+				? relevantPurchases[relevantPurchases.length - 1]?.pricePerAsset || 0
+				: 0;
 	}
 
-	let withdrawalGain = 0;
-	let exemptWithdrawalGain = 0;
-
-	if (btcAmount > 0) {
-		let remainingWithdrawalAmount = btcAmount;
-
-		while (remainingWithdrawalAmount > 0 && purchaseQueue.length > 0) {
-			const oldestPurchase = purchaseQueue[0];
-			if (!oldestPurchase) break;
-
-			const isExempt = isHeldOverOneYear(oldestPurchase.date, tx.date);
-
-			if (oldestPurchase.remaining <= remainingWithdrawalAmount) {
-				const costBasis = oldestPurchase.remaining * oldestPurchase.pricePerBTC;
-				const estimatedValue = oldestPurchase.remaining * estimatedMarketRate;
-				const gain = estimatedValue - costBasis;
-
-				if (isExempt) {
-					exemptWithdrawalGain += gain;
-				} else {
-					withdrawalGain += gain;
-				}
-
-				remainingWithdrawalAmount -= oldestPurchase.remaining;
-				purchaseQueue.shift();
-			} else {
-				const costBasis =
-					remainingWithdrawalAmount * oldestPurchase.pricePerBTC;
-				const estimatedValue = remainingWithdrawalAmount * estimatedMarketRate;
-				const gain = estimatedValue - costBasis;
-
-				if (isExempt) {
-					exemptWithdrawalGain += gain;
-				} else {
-					withdrawalGain += gain;
-				}
-
-				oldestPurchase.remaining -= remainingWithdrawalAmount;
-				remainingWithdrawalAmount = 0;
-			}
-		}
-
-		if (exemptWithdrawalGain > 0 || withdrawalGain > 0) {
-			// Enhanced logging with holding period details
-			const oldestUsedPurchase = purchaseQueue.length > 0 ? purchaseQueue[0] : null;
-			let holdingInfo = "";
-			
-			if (oldestUsedPurchase) {
-				const holdingDetails = getHoldingPeriodDetails(oldestUsedPurchase.date, tx.date);
-				holdingInfo = ` (${holdingDetails.status})`;
-			}
-			
-			console.log(
-				`🏦 Withdrawal (${tx.source}) on ${tx.date}: ${formatBTC(btcAmount)} BTC @ €${formatNumber(estimatedMarketRate)}/BTC${holdingInfo} - Taxable: ${formatNumber(withdrawalGain)} EUR, Tax-free (>1yr): ${formatNumber(exemptWithdrawalGain)} EUR`,
-			);
-		}
-	}
+	// TODO: Implement FIFO withdrawal logic for asset-agnostic handling
+	// For now, just return basic EUR value calculation
 
 	return {
-		btcAmount,
-		eurValue: btcAmount * estimatedMarketRate,
-		taxableGain: withdrawalGain,
-		exemptGain: exemptWithdrawalGain,
+		eurValue: assetAmount * estimatedMarketRate,
+		taxableGain: 0, // TODO: Implement proper FIFO gain calculation
+		exemptGain: 0, // TODO: Implement proper FIFO gain calculation
 	};
 }

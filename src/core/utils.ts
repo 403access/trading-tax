@@ -13,14 +13,36 @@ export function formatNumber(num: number): string {
 	return `${formattedInteger}.${decimalPart || "00"}`;
 }
 
-export function formatBTC(num: number): string {
-	const str = num.toFixed(8);
+export function formatCrypto(num: number, decimals: number = 8): string {
+	const str = num.toFixed(decimals);
 	const [integerPart, decimalPart] = str.split(".");
 	const formattedInteger = (integerPart || "0").replace(
 		/\B(?=(\d{3})+(?!\d))/g,
 		" ",
 	);
-	return `${formattedInteger}.${decimalPart || "00000000"}`;
+	return `${formattedInteger}.${decimalPart || "00000000".slice(0, decimals)}`;
+}
+
+export function formatBTC(num: number): string {
+	return formatCrypto(num, 8);
+}
+
+export function formatAsset(num: number, asset: string): string {
+	// Different assets have different typical decimal places
+	const decimals = getAssetDecimals(asset);
+	return formatCrypto(num, decimals);
+}
+
+export function getAssetDecimals(asset: string): number {
+	const assetDecimals: Record<string, number> = {
+		BTC: 8,
+		ETH: 6,
+		SOL: 4,
+		ADA: 6,
+		DOT: 4,
+		EUR: 2,
+	};
+	return assetDecimals[asset] || 6; // Default to 6 decimals
 }
 
 // German tax law: 1-year holding period for crypto exemption (§23 EStG)

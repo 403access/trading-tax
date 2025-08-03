@@ -1,5 +1,5 @@
-import type { TaxResults } from "../core/types";
-import { formatBTC, formatNumber } from "../core/utils";
+import type { TaxResults, PurchaseEntry } from "../core/types";
+import { formatBTC, formatNumber, formatAsset } from "../core/utils";
 import { logger } from "../core/logger";
 import {
 	getAnnualExemption,
@@ -13,7 +13,24 @@ import {
 import {
 	calculateProgressiveTax,
 	calculateTaxForYear,
-} from "../packages/tax/index.js";
+} from "../packages/tax/index";
+
+// Helper function to format asset totals
+function formatAssetTotals(
+	assetTotals: Record<string, number>,
+	label: string,
+): void {
+	logger.info(`${label}:`);
+	const assets = Object.keys(assetTotals).sort();
+	if (assets.length === 0) {
+		logger.info("  (none)");
+		return;
+	}
+	for (const asset of assets) {
+		const amount = assetTotals[asset];
+		logger.info(`  ${formatAsset(amount ?? 0, asset)}`);
+	}
+}
 
 // Output tax calculation results
 export function displayResults(results: TaxResults): void {
@@ -26,11 +43,26 @@ export function displayResults(results: TaxResults): void {
 		"Simple EUR-only Profit:",
 		formatNumber(results.totalSellEUR - results.totalBuyEUR),
 	);
+
+	// Display year-based trading breakdown
+	const years = Object.keys(results.tradingByYear).sort();
+	if (years.length > 1) {
+		logger.info("");
+		logger.info("📊 Trading by Year:");
+		for (const year of years) {
+			const yearData = results.tradingByYear[year];
+			if (!yearData) continue;
+
+			const profit = yearData.sellEUR - yearData.buyEUR;
+			logger.info(
+				`   ${year}: Bought €${formatNumber(yearData.buyEUR)}, Sold €${formatNumber(yearData.sellEUR)}, Profit €${formatNumber(profit)}`,
+			);
+		}
+	}
+
 	logger.info("");
 	logger.info(
-		"💡 NOTE: Simple profit is negative because withdrawals (",
-		formatBTC(results.totalWithdrawnBTC),
-		"BTC) are not valued in EUR.",
+		"💡 NOTE: Simple profit is negative because withdrawals are not valued in EUR.",
 	);
 	logger.info(
 		"💡 Actual profit calculation below includes market-priced withdrawals!",
@@ -47,6 +79,12 @@ export function displayResults(results: TaxResults): void {
 	logger.info(
 		"Total Realized Gain (EUR):",
 		formatNumber(results.totalTaxableGain + results.totalExemptGain),
+	);
+
+	logger.info("");
+	logger.info("📊 Tax Summary by Transaction Year:");
+	logger.info(
+		"   💡 See detailed transaction log above for individual sales breakdown",
 	);
 
 	// Enhanced German tax analysis with configurable exemption and income tax calculations
@@ -133,6 +171,16 @@ export function displayResults(results: TaxResults): void {
 				"   💡 Tax rate depends on your total annual income (progressive taxation)",
 			);
 		}
+
+		// Add yearly breakdown note
+		logger.info("");
+		logger.info("📅 Year-by-Year Analysis:");
+		logger.info(
+			"   💡 For detailed sales breakdown by year, see transaction log above",
+		);
+		logger.info(
+			"   💡 Remaining purchases section shows holdings by acquisition year",
+		);
 	}
 	logger.info(
 		"⚠️  IMPORTANT: Withdrawals are treated as disposals at market price!",
@@ -173,10 +221,38 @@ export function displayResults(results: TaxResults): void {
 
 		logger.info("");
 		logger.info("📊 Staking Rewards Details:");
+
+		// Group rewards by year
+		const rewardsByYear: Record<string, typeof results.stakingRewards> = {};
 		for (const reward of results.stakingRewards) {
-			logger.info(
-				`   ${reward.date}: ${formatNumber(reward.amount)} ${reward.asset} = €${formatNumber(reward.eurValue)} (${reward.source})`,
+			const year = new Date(reward.date).getFullYear().toString();
+			if (!rewardsByYear[year]) {
+				rewardsByYear[year] = [];
+			}
+			rewardsByYear[year].push(reward);
+		}
+
+		// Display by year in chronological order
+		const years = Object.keys(rewardsByYear).sort();
+		for (const year of years) {
+			const yearRewards = rewardsByYear[year];
+			if (!yearRewards) continue;
+
+			const yearTotal = yearRewards.reduce(
+				(sum, reward) => sum + reward.eurValue,
+				0,
 			);
+
+			logger.info(
+				`   ${year} (${yearRewards.length} rewards, €${formatNumber(yearTotal)} total):`,
+			);
+			for (const reward of yearRewards) {
+				const date = reward.date.slice(5); // Remove year prefix (YYYY-)
+				logger.info(
+					`     ${date}: ${formatAsset(reward.amount, reward.asset)} ${reward.asset} = €${formatNumber(reward.eurValue)} (${reward.source})`,
+				);
+			}
+			if (years.length > 1) logger.info(""); // Add spacing between years
 		}
 
 		logger.info("");
@@ -208,23 +284,20 @@ export function displayResults(results: TaxResults): void {
 		logger.info("");
 	}
 	logger.info("=== DEPOSIT & MOVEMENT SUMMARY ===");
-	logger.info("Total Deposited (BTC):", formatBTC(results.totalDepositedBTC));
+	formatAssetTotals(results.totalDepositedAssets, "Total Deposited");
 	logger.info(
 		"Total Deposited (EUR):",
 		formatNumber(results.totalDepositedEUR),
 	);
-	logger.info("Total Withdrawn (BTC):", formatBTC(results.totalWithdrawnBTC));
+	formatAssetTotals(results.totalWithdrawnAssets, "Total Withdrawn");
 	logger.info(
 		"Total Withdrawn (EUR):",
 		formatNumber(results.totalWithdrawnEUR),
 	);
+	formatAssetTotals(results.totalTransferredAssets, "Total Transferred");
+	formatAssetTotals(results.totalFeeAssets, "Total Fees");
 	logger.info(
-		"Total Transferred (BTC):",
-		formatBTC(results.totalTransferredBTC),
-	);
-	logger.info("Total Fees (BTC):", formatBTC(results.totalFeeBTC));
-	logger.info(
-		"ℹ️  Note: Only Bitcoin (BTC) and Euro (EUR) movements are tracked. Other cryptocurrencies are ignored.",
+		"ℹ️  Note: All cryptocurrency movements are tracked across BTC, ETH, SOL, and other assets.",
 	);
 	logger.info(
 		"🔄 Transfers: Movements between exchanges are not taxable events.",
@@ -245,17 +318,62 @@ export function displayResults(results: TaxResults): void {
 	// Show remaining purchase queue
 	if (results.remainingPurchases.length > 0) {
 		logger.info("=== REMAINING PURCHASES (not yet sold) ===");
-		let totalRemainingBTC = 0;
+
+		// Group purchases by year
+		const purchasesByYear: Record<string, typeof results.remainingPurchases> =
+			{};
+		const remainingByAsset: Record<string, { amount: number; value: number }> =
+			{};
 		let totalRemainingEUR = 0;
+
 		for (const purchase of results.remainingPurchases) {
-			totalRemainingBTC += purchase.remaining;
-			totalRemainingEUR += purchase.remaining * purchase.pricePerBTC;
+			const year = new Date(purchase.date).getFullYear().toString();
+			if (!purchasesByYear[year]) {
+				purchasesByYear[year] = [];
+			}
+			purchasesByYear[year].push(purchase);
+
+			const asset = purchase.asset;
+			const eurValue = purchase.remaining * purchase.pricePerAsset;
+			if (!remainingByAsset[asset]) {
+				remainingByAsset[asset] = { amount: 0, value: 0 };
+			}
+			remainingByAsset[asset].amount += purchase.remaining;
+			remainingByAsset[asset].value += eurValue;
+			totalRemainingEUR += eurValue;
+		}
+
+		// Display by year in chronological order
+		const years = Object.keys(purchasesByYear).sort();
+		for (const year of years) {
+			const yearPurchases = purchasesByYear[year];
+			if (!yearPurchases) continue;
+
+			const yearValue = yearPurchases.reduce(
+				(sum, p) => sum + p.remaining * p.pricePerAsset,
+				0,
+			);
 			logger.info(
-				`${purchase.date} (${purchase.source}): ${formatBTC(purchase.remaining)} BTC at ${formatNumber(purchase.pricePerBTC)} EUR/BTC`,
+				`${year} (${yearPurchases.length} purchases, €${formatNumber(yearValue)} value):`,
+			);
+
+			for (const purchase of yearPurchases) {
+				const date = purchase.date.slice(5); // Remove year prefix (YYYY-)
+				logger.info(
+					`  ${date} (${purchase.source}): ${formatAsset(purchase.remaining, purchase.asset)} at ${formatNumber(purchase.pricePerAsset)} EUR/${purchase.asset}`,
+				);
+			}
+			if (years.length > 1) logger.info(""); // Add spacing between years
+		}
+
+		logger.info("Summary by asset:");
+		for (const [asset, data] of Object.entries(remainingByAsset)) {
+			logger.info(
+				`  ${formatAsset(data.amount, asset)} (Value: ${formatNumber(data.value)} EUR)`,
 			);
 		}
 		logger.info(
-			`Total remaining: ${formatBTC(totalRemainingBTC)} BTC (Value: ${formatNumber(totalRemainingEUR)} EUR)`,
+			`Total remaining value: ${formatNumber(totalRemainingEUR)} EUR`,
 		);
 	}
 }

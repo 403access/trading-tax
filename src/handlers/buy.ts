@@ -5,17 +5,18 @@ export function processBuyTransaction(
 	purchaseQueue: PurchaseEntry[],
 ): number {
 	const eurAmount = Math.abs(tx.eurAmount);
-	const btcAmount = tx.btcAmount;
-	const pricePerBTC = btcAmount > 0 ? eurAmount / btcAmount : 0;
+	const assetAmount = tx.assetAmount;
+	const pricePerAsset = assetAmount > 0 ? eurAmount / assetAmount : 0;
 
 	// Add to FIFO queue (purchases are processed in chronological order due to pre-sorting)
 	// This ensures the oldest purchases are used first when calculating disposal gains
-	if (btcAmount > 0) {
+	if (assetAmount > 0) {
 		purchaseQueue.push({
-			amount: btcAmount,
-			pricePerBTC: pricePerBTC,
+			amount: assetAmount,
+			pricePerAsset: pricePerAsset,
+			asset: tx.asset,
 			date: tx.date,
-			remaining: btcAmount,
+			remaining: assetAmount,
 			source: tx.source,
 		});
 	}
