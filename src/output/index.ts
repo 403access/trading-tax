@@ -1,2 +1,2 @@
 // Output formatters
-export { displayResults } from "./formatter";
+export { displayResults } from "./main-formatter";
