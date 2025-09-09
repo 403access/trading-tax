@@ -1,14 +1,13 @@
-// Domain-based imports using barrel exports
-import { processTransactions } from "./domains/tax-calculations";
-import type { UnifiedTransaction } from "./domains/shared";
-import { displayResults } from "./domains/reporting";
 import {
 	loadTransactions,
 	parseBitcoinDe,
 	parseKraken,
 } from "./domains/data-integration";
 import { loadDataSources } from "./domains/infrastructure";
+import { displayResults } from "./domains/reporting";
+import type { UnifiedTransaction } from "./domains/shared";
 import { logger } from "./domains/shared";
+import { processTransactions } from "./domains/tax-calculations";
 
 export async function runApplication(): Promise<void> {
 	logger.info("🔄 Loading configuration...");
