@@ -1,9 +1,15 @@
 # Crypto Tax Calculator
 
+## TODO
+
+- Handle open positions and thus unrealized PnL.
+- Show expenses and assign them whether they are tax reductable.
+
 A German tax law compliant cryptocurrency tax calculator with advanced transfer detection and modular architecture.
 
 ## ✨ Features
 
+- ✅ **Sequence Diagram - Bank Account / Credit Card Transactions** (§ 23 EStG)
 - ✅ **German Tax Law Compliant** (§ 23 EStG)
 - ✅ **FIFO Method** for cost basis calculation  
 - ✅ **One-Year Holding Period Exemption** for long-term holdings
