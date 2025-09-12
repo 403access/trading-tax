@@ -1,8 +1,9 @@
 /**
  * Price interpolation functionality for missing dates
  */
-import { formatNumber } from "../shared/utils";
+
 import { logger } from "../shared/logger";
+import { formatNumber } from "../shared/utils";
 import type { NearestPrices } from "./types";
 
 // Constants

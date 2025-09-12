@@ -1,8 +1,8 @@
 import type { PurchaseEntry, UnifiedTransaction } from "../shared/types";
 import {
 	formatNumber,
-	isHeldOverOneYear,
 	getHoldingPeriodDetails,
+	isHeldOverOneYear,
 } from "../shared/utils";
 
 export interface SellResult {

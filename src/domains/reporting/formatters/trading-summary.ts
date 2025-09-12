@@ -1,6 +1,6 @@
+import { logger } from "../../shared/logger";
 import type { TaxResults } from "../../shared/types";
 import { formatNumber } from "../../shared/utils";
-import { logger } from "../../shared/logger";
 
 /**
  * Displays trading overview including total bought/sold and year-based breakdown

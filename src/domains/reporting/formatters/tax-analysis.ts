@@ -1,16 +1,16 @@
+import { logger } from "../../shared/logger";
 import type { TaxResults } from "../../shared/types";
 import { formatNumber } from "../../shared/utils";
-import { logger } from "../../shared/logger";
-import {
-	getAnnualExemption,
-	getBaseAnnualIncome,
-	shouldApplyIncomeTax,
-	getTaxYear,
-} from "../../tax-calculations/tax-config.js";
 import {
 	calculateProgressiveTax,
 	calculateTaxForYear,
 } from "../../tax-calculations/index";
+import {
+	getAnnualExemption,
+	getBaseAnnualIncome,
+	getTaxYear,
+	shouldApplyIncomeTax,
+} from "../../tax-calculations/tax-config.js";
 
 /**
  * Displays comprehensive tax analysis including German tax calculations

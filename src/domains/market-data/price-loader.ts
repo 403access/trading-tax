@@ -7,10 +7,10 @@ import { loadDataSources } from "../infrastructure";
 import { logger } from "../shared/logger";
 import { parseGermanDate, parseGermanNumber } from "./parsers";
 import type {
+	DataSourcesConfig,
 	HistoricalPriceRow,
 	PriceDataStats,
 	YearRange,
-	DataSourcesConfig,
 } from "./types";
 
 // Constants

@@ -1,12 +1,12 @@
-import type { TaxResults } from "../shared/types";
 import { logger } from "../shared/logger";
-import { displayTradingOverview } from "./formatters/trading-summary";
-import { displayTaxAnalysis } from "./formatters/tax-analysis";
-import { displayStakingAnalysis } from "./formatters/staking-summary";
+import type { TaxResults } from "../shared/types";
 import { displayAssetTotals } from "./formatters/asset-totals";
-import { displayTransactionStats } from "./formatters/transaction-stats";
-import { displayRemainingPurchases } from "./formatters/remaining-purchases";
 import { displayOptimizationTips } from "./formatters/optimization-tips";
+import { displayRemainingPurchases } from "./formatters/remaining-purchases";
+import { displayStakingAnalysis } from "./formatters/staking-summary";
+import { displayTaxAnalysis } from "./formatters/tax-analysis";
+import { displayTradingOverview } from "./formatters/trading-summary";
+import { displayTransactionStats } from "./formatters/transaction-stats";
 
 /**
  * Main function to display comprehensive tax calculation results

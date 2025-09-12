@@ -3,8 +3,8 @@
  * Main public API for getting Bitcoin prices with intelligent fallback and interpolation
  */
 import { extractDateFromString } from "./parsers";
-import { priceDataLoader } from "./price-loader";
 import { priceInterpolator } from "./price-interpolator";
+import { priceDataLoader } from "./price-loader";
 import type { PriceDataStats } from "./types";
 
 /**

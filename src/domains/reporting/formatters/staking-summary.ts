@@ -1,14 +1,14 @@
-import type { TaxResults, StakingReward } from "../../shared/types";
-import { formatAsset, formatNumber } from "../../shared/utils";
 import { logger } from "../../shared/logger";
+import type { StakingReward, TaxResults } from "../../shared/types";
+import { formatAsset, formatNumber } from "../../shared/utils";
 import {
-	shouldTrackStakingIncome,
 	getStakingIncomeExemption,
+	shouldTrackStakingIncome,
 } from "../../tax-calculations/tax-config.js";
 import {
-	groupByYear,
-	formatDateWithoutYear,
 	addYearSpacing,
+	formatDateWithoutYear,
+	groupByYear,
 } from "../utils/format-helpers";
 
 /**

@@ -1,30 +1,32 @@
 // Market Data Domain Barrel Export
 // Price lookup and historical data
 
-// Main services
 export {
-	getBitcoinPrice,
-	getBitcoinPriceWithFallback,
-	BitcoinPriceLookup,
-	bitcoinPriceLookup,
-} from "./price-lookup";
-export { getHistoricalPrice, calculateStakingRewardValue } from "./price-data";
-
-// Individual modules (for advanced usage)
-export { priceDataLoader, PriceDataLoader } from "./price-loader";
-export { priceInterpolator, PriceInterpolator } from "./price-interpolator";
-export {
+	extractDateFromString,
 	parseGermanDate,
 	parseGermanNumber,
-	extractDateFromString,
 } from "./parsers";
+
+export { calculateStakingRewardValue, getHistoricalPrice } from "./price-data";
+export { PriceInterpolator, priceInterpolator } from "./price-interpolator";
+
+// Individual modules (for advanced usage)
+export { PriceDataLoader, priceDataLoader } from "./price-loader";
+
+// Main services
+export {
+	BitcoinPriceLookup,
+	bitcoinPriceLookup,
+	getBitcoinPrice,
+	getBitcoinPriceWithFallback,
+} from "./price-lookup";
 
 // Types
 export type {
+	DataSourcesConfig,
 	HistoricalPriceRow,
+	NearestPrices,
 	PriceDataStats,
 	PriceInterpolationResult,
-	NearestPrices,
 	YearRange,
-	DataSourcesConfig,
 } from "./types";

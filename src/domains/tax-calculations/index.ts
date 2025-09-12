@@ -1,30 +1,30 @@
 // Tax Calculations Domain Barrel Export
 // German tax law compliance and FIFO calculations
 
-// Main calculator
-export { calculateTax, processTransactions } from "./tax-calculator";
-
-// Transfer detection
-export { detectTransfers } from "./transfer-detection";
+// German tax tariff data
+export {
+	TARIFF_2022,
+	TARIFF_2023,
+	TARIFF_2024 as currentTariff,
+} from "./data/index";
 
 // Tax helpers
 export {
-	calculateTaxForYear,
 	calculateProgressiveTax,
+	calculateTaxForYear,
 	getAvailableTaxYears,
 } from "./helpers";
 
+// Main calculator
+export { calculateTax, processTransactions } from "./tax-calculator";
+
 // Tax configuration
 export {
-	loadTaxConfig,
 	getAnnualExemption,
 	getHoldingPeriodMonths,
+	loadTaxConfig,
 	shouldApplyIncomeTax,
 } from "./tax-config";
 
-// German tax tariff data
-export {
-	TARIFF_2024 as currentTariff,
-	TARIFF_2023,
-	TARIFF_2022,
-} from "./data/index";
+// Transfer detection
+export { detectTransfers } from "./transfer-detection";

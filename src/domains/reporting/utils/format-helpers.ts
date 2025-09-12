@@ -1,5 +1,5 @@
-import { formatAsset } from "../../shared/utils";
 import { logger } from "../../shared/logger";
+import { formatAsset } from "../../shared/utils";
 
 /**
  * Helper function to format asset totals with consistent styling

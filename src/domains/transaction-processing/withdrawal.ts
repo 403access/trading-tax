@@ -1,5 +1,5 @@
-import type { PurchaseEntry, UnifiedTransaction } from "../shared/types";
 import { getBitcoinPrice } from "../market-data/price-lookup";
+import type { PurchaseEntry, UnifiedTransaction } from "../shared/types";
 
 export interface WithdrawalResult {
 	eurValue: number;

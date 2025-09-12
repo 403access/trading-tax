@@ -1,5 +1,5 @@
-import type { TaxResults } from "../../shared/types";
 import { logger } from "../../shared/logger";
+import type { TaxResults } from "../../shared/types";
 import {
 	getAnnualExemption,
 	shouldShowOptimizationTips,

@@ -1,5 +1,5 @@
-import type { UnifiedTransaction } from "../shared/types";
 import { logger } from "../shared/logger";
+import type { UnifiedTransaction } from "../shared/types";
 
 // Configuration for transfer detection
 interface TransferDetectionConfig {

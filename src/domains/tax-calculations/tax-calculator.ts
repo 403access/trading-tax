@@ -1,20 +1,20 @@
+import { logger } from "../shared/logger";
 import type {
 	PurchaseEntry,
+	StakingReward,
 	TaxResults,
 	UnifiedTransaction,
-	StakingReward,
 } from "../shared/types";
 import { processBuyTransaction } from "../transaction-processing/buy";
-import { processSellTransaction } from "../transaction-processing/sell";
-import { processWithdrawalTransaction } from "../transaction-processing/withdrawal";
 import { processDepositTransaction } from "../transaction-processing/deposit";
 import { processFeeTransaction } from "../transaction-processing/fee";
-import { processTransferTransaction } from "../transaction-processing/transfer";
+import { processSellTransaction } from "../transaction-processing/sell";
 import {
-	processStakingRewardTransaction,
 	processStakingAllocationTransaction,
+	processStakingRewardTransaction,
 } from "../transaction-processing/staking";
-import { logger } from "../shared/logger";
+import { processTransferTransaction } from "../transaction-processing/transfer";
+import { processWithdrawalTransaction } from "../transaction-processing/withdrawal";
 
 // Main entry point that loads config and calculates tax
 export async function processTransactions(
