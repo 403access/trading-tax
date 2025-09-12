@@ -1,4 +1,4 @@
-import { Button } from "#/src/frontend/components/ui/button";
+import { Button } from "#/frontend/components/ui/button";
 
 export function App() {
 	return (
