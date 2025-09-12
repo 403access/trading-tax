@@ -1,3 +1,10 @@
+import { Button } from "#/src/frontend/components/ui/button";
+
 export function App() {
-	return <div>Hello World</div>;
+	return (
+		<div>
+			Hello World
+			<Button>Click me</Button>
+		</div>
+	);
 }
