@@ -1,6 +1,6 @@
-import type { UnifiedTransaction, StakingReward } from "../shared/types";
 import { calculateStakingRewardValue } from "../market-data/price-data";
 import { logger } from "../shared/logger";
+import type { StakingReward, UnifiedTransaction } from "../shared/types";
 
 /**
  * Process staking reward transaction - this is taxable income in Germany
