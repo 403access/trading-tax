@@ -6,7 +6,7 @@
 	"scripts": {
 		"cli": "bun run index.ts",
 		"server": "bun run src/server/server.ts",
-		"format": "npx @biomejs/biome format --write ./"
+		"format": "npx @biomejs/biome format --write ./src"
 	},
 	"devDependencies": {
 		"@types/bun": "latest"
