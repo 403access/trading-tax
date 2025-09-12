@@ -6,7 +6,9 @@ export { logger } from "./logger";
 
 // Primary types
 export type {
+	LogRecord,
 	PurchaseEntry,
+	RunOutput,
 	StakingData,
 	TaxResults,
 	UnifiedTransaction,
@@ -26,3 +28,10 @@ export {
 // Constants
 export const DEFAULT_CURRENCY = "EUR";
 export const SUPPORTED_ASSETS = ["BTC", "ETH"] as const;
+
+// Logger helpers for buffered logs
+export {
+	disableLogBuffer,
+	enableLogBuffer,
+	flushLogBuffer,
+} from "./logger";

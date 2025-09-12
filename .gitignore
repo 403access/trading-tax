@@ -1,6 +1,9 @@
 # dependencies (bun install)
 node_modules
 
+# cli output
+data/output
+
 # Sensitive personal financial data - exclude all CSV files in transactions
 data/transactions/**/*.csv
 

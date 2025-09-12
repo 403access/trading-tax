@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
 	serve,
 	// sql
@@ -26,11 +28,22 @@ const server = serve({
 		// 		return Response.json(user);
 		// 	},
 		// },
-		// "/api/users/:id": async (req) => {
-		// 	const { id } = req.params;
-		// 	const [user] = await sql`SELECT * FROM users WHERE id = ${id}`;
-		// 	return Response.json(user);
-		// },
+		"/api/run-output": {
+			async GET() {
+				try {
+					const file = join(process.cwd(), "data", "output", "last-run.json");
+					const json = readFileSync(file, "utf8");
+					return new Response(json, {
+						headers: { "Content-Type": "application/json" },
+					});
+				} catch {
+					return Response.json(
+						{ error: "No run output available yet" },
+						{ status: 404 },
+					);
+				}
+			},
+		},
 	},
 
 	// Enable development mode for:

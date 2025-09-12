@@ -118,3 +118,19 @@ export function addToAssetTotal(
 	}
 	assetTotals[asset] += amount;
 }
+
+// Structured log record for UI/serialization
+export interface LogRecord {
+	level: "ERROR" | "WARN" | "INFO" | "DEBUG";
+	message: string;
+	feature?: string; // Optional feature channel (e.g., dataLoading)
+	timestamp: string; // ISO string
+	args?: unknown[]; // Optional extra data
+}
+
+// Output of running the main application flow
+export interface RunOutput {
+	results?: TaxResults; // Present on success
+	logs: LogRecord[]; // All collected logs for this run
+	error?: string; // Error message on failure
+}

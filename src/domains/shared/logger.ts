@@ -9,7 +9,7 @@ export interface LoggerConfig {
 	level: LogLevel;
 	enableTimestamps?: boolean;
 	enableColors?: boolean;
-	features?: Record<string, LogLevel | "off">;
+	features: Record<string, LogLevel | "off">;
 }
 
 const DEFAULT_CONFIG = {
@@ -79,13 +79,13 @@ function loadLoggerConfig(): LoggerConfig {
 			for (const [key, value] of Object.entries(configFile.features)) {
 				if (typeof value === "string") {
 					if (value === "off") {
-						config.features![key] = "off";
+						config.features[key] = "off";
 					} else {
-						config.features![key] = levelMap[value] ?? LogLevel.INFO;
+						config.features[key] = levelMap[value] ?? LogLevel.INFO;
 					}
 				} else if (typeof value === "boolean") {
 					// Support legacy boolean format
-					config.features![key] = value ? LogLevel.INFO : "off";
+					config.features[key] = value ? LogLevel.INFO : "off";
 				}
 			}
 		}
@@ -97,8 +97,18 @@ function loadLoggerConfig(): LoggerConfig {
 	}
 }
 
+type LogLevelString = "ERROR" | "WARN" | "INFO" | "DEBUG";
+
 class Logger {
 	private config: LoggerConfig;
+	private bufferEnabled = false;
+	private buffered: Array<{
+		level: LogLevel;
+		message: string;
+		args: unknown[];
+		feature?: string;
+		timestamp: string;
+	}> = [];
 
 	constructor(config: LoggerConfig = DEFAULT_CONFIG) {
 		this.config = { ...DEFAULT_CONFIG, ...config };
@@ -130,32 +140,52 @@ class Logger {
 		return formatted;
 	}
 
-	error(message: string, ...args: any[]): void {
+	private push(
+		level: LogLevel,
+		message: string,
+		args: unknown[],
+		feature?: string,
+	) {
+		if (!this.bufferEnabled) return;
+		this.buffered.push({
+			level,
+			message,
+			args,
+			feature,
+			timestamp: new Date().toISOString(),
+		});
+	}
+
+	error(message: string, ...args: unknown[]): void {
 		if (this.shouldLog(LogLevel.ERROR)) {
 			console.error(this.formatMessage(LogLevel.ERROR, message), ...args);
 		}
+		this.push(LogLevel.ERROR, message, args);
 	}
 
-	warn(message: string, ...args: any[]): void {
+	warn(message: string, ...args: unknown[]): void {
 		if (this.shouldLog(LogLevel.WARN)) {
 			console.warn(this.formatMessage(LogLevel.WARN, message), ...args);
 		}
+		this.push(LogLevel.WARN, message, args);
 	}
 
-	info(message: string, ...args: any[]): void {
+	info(message: string, ...args: unknown[]): void {
 		if (this.shouldLog(LogLevel.INFO)) {
 			console.log(this.formatMessage(LogLevel.INFO, message), ...args);
 		}
+		this.push(LogLevel.INFO, message, args);
 	}
 
-	debug(message: string, ...args: any[]): void {
+	debug(message: string, ...args: unknown[]): void {
 		if (this.shouldLog(LogLevel.DEBUG)) {
 			console.log(this.formatMessage(LogLevel.DEBUG, message), ...args);
 		}
+		this.push(LogLevel.DEBUG, message, args);
 	}
 
 	// Feature-specific logging using configured levels
-	log(feature: FeatureKey, message: string, ...args: any[]): void {
+	log(feature: FeatureKey, message: string, ...args: unknown[]): void {
 		const featureLevel = this.config.features?.[feature];
 
 		// Skip if feature is disabled or doesn't exist in config
@@ -171,6 +201,7 @@ class Logger {
 						: console.log;
 			output(this.formatMessage(featureLevel, message), ...args);
 		}
+		this.push(featureLevel, message, args, feature);
 	}
 
 	// Overloaded method for custom log levels (backwards compatibility)
@@ -178,7 +209,7 @@ class Logger {
 		feature: string,
 		level: LogLevel,
 		message: string,
-		...args: any[]
+		...args: unknown[]
 	): void {
 		const featureLevel = this.config.features?.[feature];
 
@@ -195,6 +226,7 @@ class Logger {
 						: console.log;
 			output(this.formatMessage(level, message), ...args);
 		}
+		this.push(level, message, args, feature);
 	}
 
 	// Configuration methods
@@ -205,7 +237,44 @@ class Logger {
 	setConfig(config: Partial<LoggerConfig>): void {
 		this.config = { ...this.config, ...config };
 	}
+
+	// Buffer control
+	enableBuffer(): void {
+		this.bufferEnabled = true;
+		this.buffered = [];
+	}
+	disableBuffer(): void {
+		this.bufferEnabled = false;
+	}
+	flushBuffer(): {
+		level: LogLevelString;
+		message: string;
+		args?: unknown[];
+		feature?: string;
+		timestamp: string;
+	}[] {
+		const levelToString: Record<LogLevel, LogLevelString> = {
+			[LogLevel.ERROR]: "ERROR",
+			[LogLevel.WARN]: "WARN",
+			[LogLevel.INFO]: "INFO",
+			[LogLevel.DEBUG]: "DEBUG",
+		};
+		const out = this.buffered.map((r) => ({
+			level: levelToString[r.level],
+			message: r.message,
+			args: r.args?.length ? r.args : undefined,
+			feature: r.feature,
+			timestamp: r.timestamp,
+		}));
+		this.buffered = [];
+		return out;
+	}
 }
 
 // Export singleton logger instance
 export const logger = new Logger(loadLoggerConfig());
+
+// Helper functions for external usage without exposing class methods directly
+export const enableLogBuffer = () => logger.enableBuffer();
+export const disableLogBuffer = () => logger.disableBuffer();
+export const flushLogBuffer = () => logger.flushBuffer();
