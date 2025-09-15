@@ -25,7 +25,9 @@ export function App() {
 				const res = await fetch("/api/run-output");
 				if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
 				const json = (await res.json()) as UIData;
-				if (!cancelled) setData(json);
+				if (!cancelled) {
+					setData(json);
+				}
 			} catch (e) {
 				if (!cancelled) setError(e instanceof Error ? e.message : String(e));
 			} finally {
